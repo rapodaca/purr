@@ -1,8 +1,14 @@
 [package]
 name = "purr"
 version = "0.1.0"
-authors = ["Richard Apodaca <rich.apodaca@gmail.com>"]
+authors = ["The Purr Project Developers"]
+license = "MIT"
 edition = "2018"
+readme = "README.md"
+repository = "https://github.com/rapodaca/purr"
+description = """
+Primitives for reading the SMILES language in Rust.
+"""
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
