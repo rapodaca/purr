@@ -1,9 +1,11 @@
 use crate::scanner::Scanner;
 use crate::error::Error;
 use crate::bare_atom;
+use crate::bracket_atom;
 use crate::Builder;
 use crate::Mol;
 use crate::Style;
+use crate::Atom;
 
 pub fn smiles_to_mol(text: &str) -> Result<Mol, Error> {
     let mut scanner = Scanner::new(text);
@@ -12,7 +14,7 @@ pub fn smiles_to_mol(text: &str) -> Result<Mol, Error> {
         return Err(Error::EndOfLine);
     }
     
-    if let Some(atom) = bare_atom(&mut scanner)? {
+    if let Some(atom) = either_atom(&mut scanner)? {
         let mut state = State {
             scanner: scanner,
             builder: Builder::new(atom),
@@ -27,9 +29,7 @@ pub fn smiles_to_mol(text: &str) -> Result<Mol, Error> {
 
                 break match state.builder.to_mol() {
                     Ok(molecule) => Ok(molecule),
-                    Err(_) => {
-                        unimplemented!()
-                    }
+                    Err(_) => Err(Error::InvalidState)
                 }
             }
         }
@@ -37,7 +37,14 @@ pub fn smiles_to_mol(text: &str) -> Result<Mol, Error> {
         Err(Error::InvalidCharacter(0))
     }
 }
-                
+
+fn either_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+    match bare_atom(scanner)? {
+        Some(atom) => Ok(Some(atom)),
+        None => bracket_atom(scanner)
+    }
+}
+
 // <line> ::= <atom> ( <chain> | <branch> )*
 fn line(state: &mut State) -> Result<bool, Error> {
     if !atom(state)? {
@@ -56,7 +63,7 @@ fn atom(state: &mut State) -> Result<bool, Error> {
     let dot = state.dot;
     state.dot = false;
 
-    match bare_atom(&mut state.scanner)? {
+    match either_atom(&mut state.scanner)? {
         Some(atom) => {
             if dot {
                 state.builder.root(atom);
@@ -213,6 +220,7 @@ mod tests {
     use crate::Element;
     use crate::Atom;
     use crate::Bond;
+    use crate::Parity;
 
     #[test]
     fn blank() {
@@ -241,6 +249,13 @@ mod tests {
     }
 
     #[test]
+    fn open_cycle() {
+        let mol = smiles_to_mol(&"C1CC");
+
+        assert_eq!(mol, Err(Error::InvalidState));
+    }
+
+    #[test]
     fn methane() {
         let mol = smiles_to_mol(&"C").unwrap();
 
@@ -261,6 +276,39 @@ mod tests {
                 Atom { element: Element::N, ..Default::default() }
             ],
             bonds: vec![ vec![ ] ]
+        });
+    }
+
+    #[test]
+    fn kitchen_sink_head() {
+        let mol = smiles_to_mol(&"[15n@H+:123]").unwrap();
+
+        assert_eq!(mol, Mol {
+            atoms: vec![
+                Atom {
+                    element: Element::N, isotope: Some(15), aromatic: true,
+                    parity: Some(Parity::Counterclockwise),
+                    hcount: Some(1), charge: Some(1), map: 123
+                }
+            ],
+            bonds: vec! [ vec![ ] ]
+        });
+    }
+
+    #[test]
+    fn kitchen_sink_body() {
+        let mol = smiles_to_mol(&"C.[15n@H+:123]").unwrap();
+
+        assert_eq!(mol, Mol {
+            atoms: vec![
+                Atom { ..Default::default() },
+                Atom {
+                    element: Element::N, isotope: Some(15), aromatic: true,
+                    parity: Some(Parity::Counterclockwise),
+                    hcount: Some(1), charge: Some(1), map: 123
+                }
+            ],
+            bonds: vec! [ vec![ ], vec![ ] ]
         });
     }
 

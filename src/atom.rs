@@ -9,5 +9,5 @@ pub struct Atom {
     pub hcount: Option<u8>,
     pub charge: Option<i8>,
     pub parity: Option<Parity>,
-    pub map: Option<u8>,
+    pub map: u16,
 }

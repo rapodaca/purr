@@ -2,5 +2,6 @@
 pub enum Error {
     EndOfLine,
     InvalidCharacter(usize),
-    MismatchedStyle
+    MismatchedStyle,
+    InvalidState
 }
