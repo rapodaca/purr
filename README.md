@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-purr = "0.1"
+purr = "0.2.0"
 ```
 
 ## Examples
