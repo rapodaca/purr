@@ -1,5 +1,5 @@
-use crate::parity::Parity;
-use crate::element::Element;
+use super::parity::Parity;
+use super::element::Element;
 
 #[derive(PartialEq, Eq, Default, Debug, Clone, Copy)]
 pub struct Atom {

@@ -1,4 +1,4 @@
-use crate::Style;
+use super::style::Style;
 
 pub fn match_styles(
     left: Option<Style>, right: Option<Style>

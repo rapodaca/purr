@@ -1,7 +1,7 @@
-use crate::Scanner;
-use crate::Error;
-use crate::Atom;
-use crate::Element;
+use crate::util::Scanner;
+use super::error::Error;
+use crate::mol::Atom;
+use crate::mol::Element;
 
 pub fn symbol(
     scanner: &mut Scanner, atom: &mut Atom

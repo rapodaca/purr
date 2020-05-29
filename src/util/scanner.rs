@@ -35,11 +35,6 @@ impl Scanner {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Error {
-    EndOfLine
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

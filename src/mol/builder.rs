@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::Atom;
-use crate::Bond;
-use crate::Mol;
-use crate::Style;
-use crate::match_styles::match_styles;
+use super::atom::Atom;
+use super::bond::Bond;
+use super::mol::Mol;
+use super::style::Style;
+use super::match_styles::match_styles;
 
 pub struct Builder {
     atoms: Vec<Atom>, 
@@ -141,7 +141,8 @@ struct Cut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Element;
+    // use crate::Element;
+    use crate::mol::Element;
 
     #[test]
     fn cut_given_mismatch() {

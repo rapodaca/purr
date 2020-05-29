@@ -1,4 +1,4 @@
-use crate::style::Style;
+use super::style::Style;
 
 #[derive(PartialEq, Eq, Default, Debug)]
 pub struct Bond {

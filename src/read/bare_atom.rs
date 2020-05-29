@@ -1,7 +1,7 @@
-pub use crate::Error;
-pub use crate::Atom;
-pub use crate::Scanner;
-pub use crate::Element;
+pub use super::error::Error;
+pub use crate::mol::Atom;
+pub use crate::util::Scanner;
+pub use crate::mol::Element;
 
 pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
     match scanner.peek() {

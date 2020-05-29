@@ -1,8 +1,8 @@
-use crate::Scanner;
-use crate::Atom;
-use crate::Error;
-use crate::symbol;
-use crate::Parity;
+use crate::mol::Atom;
+use crate::mol::Parity;
+use super::error::Error;
+use super::symbol::symbol;
+use crate::util::Scanner;
 
 pub fn bracket_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
     if let Some('[') = scanner.peek() {
@@ -174,8 +174,7 @@ fn fifteen(scanner: &mut Scanner) -> Option<i8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Atom;
-    use crate::Element;
+    use crate::mol::Element;
 
     #[test]
     fn no_leading_bracket() {

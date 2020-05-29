@@ -1,5 +1,5 @@
-use crate::Atom;
-use crate::Bond;
+use super::atom::Atom;
+use super::bond::Bond;
 
 #[derive(PartialEq, Eq, Default, Debug)]
 pub struct Mol {

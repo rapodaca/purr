@@ -1,13 +1,13 @@
-use crate::scanner::Scanner;
-use crate::error::Error;
-use crate::bare_atom;
-use crate::bracket_atom;
-use crate::Builder;
-use crate::Mol;
-use crate::Style;
-use crate::Atom;
+use crate::util::Scanner;
+use super::error::Error;
+use super::bare_atom::bare_atom;
+use super::bracket_atom::bracket_atom;
+use crate::mol::Builder;
+use crate::mol::Mol;
+use crate::mol::Style;
+use crate::mol::Atom;
 
-pub fn smiles_to_mol(text: &str) -> Result<Mol, Error> {
+pub fn read(text: &str) -> Result<Mol, Error> {
     let mut scanner = Scanner::new(text);
 
     if scanner.done() {
@@ -217,47 +217,46 @@ struct State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Element;
-    use crate::Atom;
-    use crate::Bond;
-    use crate::Parity;
+    use crate::mol::Element;
+    use crate::mol::Bond;
+    use crate::mol::Parity;
 
     #[test]
     fn blank() {
-        assert_eq!(smiles_to_mol(&""), Err(Error::EndOfLine));
+        assert_eq!(read(&""), Err(Error::EndOfLine));
     }
 
     #[test]
     fn unrecognized_ending() {
-        let atoms = smiles_to_mol(&"CX");
+        let atoms = read(&"CX");
 
         assert_eq!(atoms, Err(Error::InvalidCharacter(1)));
     }
     
     #[test]
     fn open_paren() {
-        let mol = smiles_to_mol(&"C(C");
+        let mol = read(&"C(C");
 
         assert_eq!(mol, Err(Error::EndOfLine));
     }
 
     #[test]
     fn open_paren_unrecognized_ending() {
-        let mol = smiles_to_mol(&"C(CX");
+        let mol = read(&"C(CX");
 
         assert_eq!(mol, Err(Error::InvalidCharacter(3)));
     }
 
     #[test]
     fn open_cycle() {
-        let mol = smiles_to_mol(&"C1CC");
+        let mol = read(&"C1CC");
 
         assert_eq!(mol, Err(Error::InvalidState));
     }
 
     #[test]
     fn methane() {
-        let mol = smiles_to_mol(&"C").unwrap();
+        let mol = read(&"C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -269,7 +268,7 @@ mod tests {
 
     #[test]
     fn ammonia() {
-        let mol = smiles_to_mol(&"N").unwrap();
+        let mol = read(&"N").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -281,7 +280,7 @@ mod tests {
 
     #[test]
     fn kitchen_sink_head() {
-        let mol = smiles_to_mol(&"[15n@H+:123]").unwrap();
+        let mol = read(&"[15n@H+:123]").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -297,7 +296,7 @@ mod tests {
 
     #[test]
     fn kitchen_sink_body() {
-        let mol = smiles_to_mol(&"C.[15n@H+:123]").unwrap();
+        let mol = read(&"C.[15n@H+:123]").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -314,7 +313,7 @@ mod tests {
 
     #[test]
     fn ethane() {
-        let mol = smiles_to_mol(&"CC").unwrap();
+        let mol = read(&"CC").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -330,7 +329,7 @@ mod tests {
 
     #[test]
     fn ethane_with_explicit_bond() {
-        let mol = smiles_to_mol(&"C-C").unwrap();
+        let mol = read(&"C-C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -346,7 +345,7 @@ mod tests {
 
     #[test]
     fn ethene() {
-        let mol = smiles_to_mol(&"C=C").unwrap();
+        let mol = read(&"C=C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -362,7 +361,7 @@ mod tests {
 
     #[test]
     fn aromatic_ethene() {
-        let mol = smiles_to_mol(&"C:C").unwrap();
+        let mol = read(&"C:C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -378,7 +377,7 @@ mod tests {
 
     #[test]
     fn up_ethane() {
-        let mol = smiles_to_mol(&"C/C").unwrap();
+        let mol = read(&"C/C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -394,7 +393,7 @@ mod tests {
 
     #[test]
     fn down_ethane() {
-        let mol = smiles_to_mol(&"C\\C").unwrap();
+        let mol = read(&"C\\C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -410,7 +409,7 @@ mod tests {
 
     #[test]
     fn ethyne() {
-        let mol = smiles_to_mol(&"C#C").unwrap();
+        let mol = read(&"C#C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -426,7 +425,7 @@ mod tests {
 
     #[test]
     fn c2() {
-        let mol = smiles_to_mol(&"C$C").unwrap();
+        let mol = read(&"C$C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -442,7 +441,7 @@ mod tests {
 
     #[test]
     fn methane_hydrate() {
-        let mol = smiles_to_mol(&"C.O").unwrap();
+        let mol = read(&"C.O").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -458,7 +457,7 @@ mod tests {
 
     #[test]
     fn ethane_hydrate() {
-        let mol = smiles_to_mol(&"O.CC").unwrap();
+        let mol = read(&"O.CC").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -476,7 +475,7 @@ mod tests {
 
     #[test]
     fn propane() {
-        let mol = smiles_to_mol(&"CCC").unwrap();
+        let mol = read(&"CCC").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -497,7 +496,7 @@ mod tests {
 
     #[test]
     fn branched_propane() {
-        let mol = smiles_to_mol(&"C(C)C").unwrap();
+        let mol = read(&"C(C)C").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -518,7 +517,7 @@ mod tests {
 
     #[test]
     fn propene() {
-        let mol = smiles_to_mol(&"C=CC").unwrap();
+        let mol = read(&"C=CC").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -539,7 +538,7 @@ mod tests {
 
     #[test]
     fn bromochloroflurormethane() {
-        let mol = smiles_to_mol(&"C(F)(Cl)Br").unwrap();
+        let mol = read(&"C(F)(Cl)Br").unwrap();
 
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -570,7 +569,7 @@ mod tests {
     #[test]
     fn nested_parens() {
         //                        0 1 2 3 4
-        let mol = smiles_to_mol(&"C(C(C)C)C").unwrap();
+        let mol = read(&"C(C(C)C)C").unwrap();
         let c = Atom { element: Element::C, ..Default::default() };
 
         assert_eq!(mol, Mol {
@@ -601,7 +600,7 @@ mod tests {
     #[test]
     fn monocycle() {
         //                        0 12
-        let mol = smiles_to_mol(&"C1CC1").unwrap();
+        let mol = read(&"C1CC1").unwrap();
         
         assert_eq!(mol, Mol {
             atoms: vec![
@@ -629,7 +628,7 @@ mod tests {
     #[test]
     fn bicycle() {
         //                        0  12 3
-        let mol = smiles_to_mol(&"C12CC1C2").unwrap();
+        let mol = read(&"C12CC1C2").unwrap();
         let c = Atom { element: Element::C, ..Default::default() };
         
         assert_eq!(mol, Mol {
