@@ -1,9 +1,16 @@
-use purr::read::read;
+use purr::read::{ read, Error };
 use purr::valence::implicit_hydrogens;
 use purr::mol::{ Mol, Atom, Bond, Element };
 
 #[test]
-fn test_add() {
+fn read_invalid_atom() {
+    let mol = read(&"X");
+
+    assert_eq!(mol.err(), Some(Error::InvalidCharacter(0)));
+}
+
+#[test]
+fn read_ethanol_bracket() {
     let mol = read(&"OC[CH3]").unwrap();
 
     assert_eq!(mol, Mol {

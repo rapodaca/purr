@@ -5,3 +5,4 @@ pub mod error;
 pub mod symbol;
 
 pub use read::read;
+pub use error::Error;
