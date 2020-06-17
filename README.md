@@ -44,6 +44,19 @@ fn main() -> Result<(), Error> {
 }
 ```
 
+Syntax errors are caught and the index of the error is returned. Some semantic
+errors are caught, but index reporting is not currently available.
+
+```rust
+use purr::read::read;
+
+fn main() {
+    let mol = read(&"OCCXC");
+
+    assert_eq!(mol.err(), Some(Err::InvalidCharacter(3)));
+}
+```
+
 # Versions
 
 Purr is not yet stable. Patch versions never introduce breaking changes, but minor/major versions probably will.

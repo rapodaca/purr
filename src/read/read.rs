@@ -1,20 +1,48 @@
 use crate::util::Scanner;
+use crate::mol::{ Builder, Mol, Style, Atom };
 use super::error::Error;
 use super::bare_atom::bare_atom;
 use super::bracket_atom::bracket_atom;
-use crate::mol::Builder;
-use crate::mol::Mol;
-use crate::mol::Style;
-use crate::mol::Atom;
 
 /// Reads a string representation of a SMILES. Supports all features,
 /// including aromaticity, double bond conformation, and tetrahedral atom
 /// parity.
 /// 
-/// Supports most of the features of [OpenSMILES](http://opensmiles.org), with a few exceptions:
+/// Supports the feature set found in *[SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)*. This is a subset of
+/// features supported by [OpenSMILES](http://opensmiles.org). The missing
+/// features are:
 ///
-/// - wildcard/unknonw atom (*) is not supported
-/// - only tetrahedral atom pariities (@, @@) are supported
+/// - no wildcard/unknown atom (*)
+/// - only tetrahedral atom pariities (@, @@)
+/// 
+/// ```rust
+/// use purr::read::{ read, Error };
+/// use purr::valence::implicit_hydrogens;
+/// use purr::mol::{ Mol, Atom, Bond, Element };
+///
+/// fn main() -> Result<(), Error> {
+///     let mol = read(&"OC[CH3]")?;
+///
+///     assert_eq!(mol, Mol {
+///         atoms: vec![
+///             Atom { element: Element::O, ..Default::default() },
+///             Atom { ..Default::default() },
+///             Atom { hcount: Some(3), charge: Some(0), ..Default::default() }
+///         ],
+///         bonds: vec![
+///             vec![ Bond { tid: 1, style: None } ],
+///             vec![ Bond { tid: 0, style: None }, Bond { tid: 2, style: None } ],
+///             vec![ Bond { tid: 1, style: None } ]
+///         ]
+///     });
+///
+///     assert_eq!(implicit_hydrogens(&mol.atoms[0], &mol.bonds[0]), Some(1));
+///     assert_eq!(implicit_hydrogens(&mol.atoms[1], &mol.bonds[1]), Some(2));
+///     assert_eq!(implicit_hydrogens(&mol.atoms[2], &mol.bonds[2]), None);
+///
+///     Ok(())
+/// }
+/// ```
 pub fn read(text: &str) -> Result<Mol, Error> {
     let mut scanner = Scanner::new(text);
 
