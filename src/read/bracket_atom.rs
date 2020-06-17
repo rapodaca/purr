@@ -11,7 +11,9 @@ pub fn bracket_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
         return Ok(None);
     }
 
-    let mut atom = Atom { ..Default::default() };
+    let mut atom = Atom {
+        hcount: Some(0), charge: Some(0), ..Default::default()
+    };
 
     atom.isotope = triple_digits(scanner);
 
@@ -254,7 +256,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            ..Default::default()
+            hcount: Some(0), charge: Some(0), ..Default::default()
         }));
     }
 
@@ -264,7 +266,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            aromatic: true, ..Default::default()
+            hcount: Some(0), aromatic: true,
+            charge: Some(0), ..Default::default()
         }));
     }
 
@@ -274,7 +277,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            isotope: Some(13), ..Default::default()
+            hcount: Some(0), charge: Some(0), isotope: Some(13),
+            ..Default::default()
         }));
     }
 
@@ -284,7 +288,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            isotope: Some(13), ..Default::default()
+            hcount: Some(0), isotope: Some(13), charge: Some(0), 
+            ..Default::default()
         }));
     }
 
@@ -294,7 +299,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            hcount: Some(1), ..Default::default()
+            hcount: Some(1), charge: Some(0), ..Default::default()
         }));
     }
 
@@ -304,7 +309,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            hcount: Some(2), ..Default::default()
+            hcount: Some(2), charge: Some(0), ..Default::default()
         }));
     }
 
@@ -314,7 +319,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            charge: Some(1), ..Default::default()
+            hcount: Some(0), charge: Some(1), ..Default::default()
         }));
     }
 
@@ -324,7 +329,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            charge: Some(1), ..Default::default()
+            hcount: Some(0), charge: Some(1), ..Default::default()
         }));
     }
 
@@ -334,7 +339,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            element: Element::Ca, charge: Some(2), ..Default::default()
+            hcount: Some(0), element: Element::Ca,
+            charge: Some(2), ..Default::default()
         }));
     }
 
@@ -344,7 +350,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            element: Element::Ca, charge: Some(2), ..Default::default()
+            hcount: Some(0), element: Element::Ca,
+            charge: Some(2), ..Default::default()
         }));
     }
 
@@ -354,7 +361,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            element: Element::Zn, charge: Some(15), ..Default::default()
+            hcount: Some(0), element: Element::Zn,
+            charge: Some(15), ..Default::default()
         }));
     }
 
@@ -364,7 +372,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            element: Element::Cl, charge: Some(-1), ..Default::default()
+            hcount: Some(0), element: Element::Cl,
+            charge: Some(-1), ..Default::default()
         }));
     }
 
@@ -374,7 +383,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            element: Element::Cl, charge: Some(-1), ..Default::default()
+            hcount: Some(0), element: Element::Cl,
+            charge: Some(-1), ..Default::default()
         }));
     }
 
@@ -384,7 +394,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            element: Element::O, charge: Some(-2), ..Default::default()
+            hcount: Some(0), element: Element::O,
+            charge: Some(-2), ..Default::default()
         }));
     }
 
@@ -394,7 +405,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
 
         assert_eq!(result, Some(Atom {
-            element: Element::O, charge: Some(-2), ..Default::default()
+            hcount: Some(0), element: Element::O,
+            charge: Some(-2), ..Default::default()
         }));
     }
 
@@ -404,7 +416,8 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            element: Element::Ti, charge: Some(-15), ..Default::default()
+            hcount: Some(0), element: Element::Ti,
+            charge: Some(-15), ..Default::default()
         }));
     }
 
@@ -414,7 +427,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            ..Default::default()
+            hcount: Some(0), charge: Some(0),  ..Default::default()
         }));
     }
 
@@ -424,7 +437,7 @@ mod tests {
         let result = bracket_atom(&mut scanner).unwrap();
     
         assert_eq!(result, Some(Atom {
-            map: 999, ..Default::default()
+            hcount: Some(0), charge: Some(0), map: 999, ..Default::default()
         }));
     }
 

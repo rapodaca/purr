@@ -7,6 +7,14 @@ use crate::mol::Mol;
 use crate::mol::Style;
 use crate::mol::Atom;
 
+/// Reads a string representation of a SMILES. Supports all features,
+/// including aromaticity, double bond conformation, and tetrahedral atom
+/// parity.
+/// 
+/// Supports most of the features of [OpenSMILES](http://opensmiles.org), with a few exceptions:
+///
+/// - wildcard/unknonw atom (*) is not supported
+/// - only tetrahedral atom pariities (@, @@) are supported
 pub fn read(text: &str) -> Result<Mol, Error> {
     let mut scanner = Scanner::new(text);
 

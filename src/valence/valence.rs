@@ -1,6 +1,14 @@
-use crate::mol::Bond;
-use crate::mol::Style;
+use crate::mol::{ Bond, Style };
 
+/// Returns the sum of bond orders using this model:
+/// - single: 1
+/// - double: 2
+/// - triple: 3
+/// - quadruple: 4
+/// - aromatic: 1
+/// - up: 1
+/// - down: 1
+/// - elided: 1
 pub fn valence(bonds: &Vec<Bond>) -> u8 {
     bonds.iter().fold(0, |total, bond| {
         match bond.style {

@@ -10,14 +10,14 @@ fn read_invalid_atom() {
 }
 
 #[test]
-fn read_ethanol_bracket() {
-    let mol = read(&"OC[CH3]").unwrap();
+fn read_ethanol_bracket() -> Result<(), Error> {
+    let mol = read(&"OC[CH3]")?;
 
     assert_eq!(mol, Mol {
         atoms: vec![
             Atom { element: Element::O, ..Default::default() },
             Atom { ..Default::default() },
-            Atom { hcount: Some(3), ..Default::default() }
+            Atom { hcount: Some(3), charge: Some(0), ..Default::default() }
         ],
         bonds: vec![
             vec![ Bond { tid: 1, style: None } ],
@@ -25,7 +25,10 @@ fn read_ethanol_bracket() {
             vec![ Bond { tid: 1, style: None } ]
         ]
     });
-    assert_eq!(implicit_hydrogens(&0, &mol), Ok(Some(1)));
-    assert_eq!(implicit_hydrogens(&1, &mol), Ok(Some(2)));
-    assert_eq!(implicit_hydrogens(&2, &mol), Ok(None));
+
+    assert_eq!(implicit_hydrogens(&mol.atoms[0], &mol.bonds[0]), Some(1));
+    assert_eq!(implicit_hydrogens(&mol.atoms[1], &mol.bonds[1]), Some(2));
+    assert_eq!(implicit_hydrogens(&mol.atoms[2], &mol.bonds[2]), None);
+    
+    Ok(())
 }

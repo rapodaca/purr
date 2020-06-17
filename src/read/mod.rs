@@ -1,8 +1,8 @@
-pub mod read;
-pub mod bare_atom;
-pub mod bracket_atom;
-pub mod error;
-pub mod symbol;
+mod read;
+mod bare_atom;
+mod bracket_atom;
+mod error;
+mod symbol;
 
 pub use read::read;
 pub use error::Error;
