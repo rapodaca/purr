@@ -1,10 +1,11 @@
 use crate::mol::{ Atom, Bond };
-use super::{ targets, valence };
+use super::{ targets, valence, Error };
 
 /// Returns the difference between the next-nearest target valence and
 /// the bond order sum. Returns None if valence targets are not defined.
 /// Includes hcount, but disregards aromatic flag.
-pub fn hypovalence(atom: &Atom, bonds: &Vec<Bond>) -> Option<u8> {
+/// Returns error if target valences are available but none match.
+pub fn hypovalence(atom: &Atom, bonds: &Vec<Bond>) -> Result<Option<u8>, Error> {
     match targets(atom) {
         Some(targets) => {
             let sum = valence(bonds);
@@ -12,15 +13,15 @@ pub fn hypovalence(atom: &Atom, bonds: &Vec<Bond>) -> Option<u8> {
             for target in targets {
                 if target >= sum {
                     match atom.hcount {
-                        Some(hcount) => return Some(target - sum - hcount),
-                        None => return Some(target - sum)
+                        Some(hcount) => return Ok(Some(target - sum - hcount)),
+                        None => return Ok(Some(target - sum))
                     }
                 }
             }
             
-            None
+            Err(Error::UnmatchableValence)
         },
-        None => None
+        None => Ok(None)
     }
 }
 
@@ -35,7 +36,7 @@ mod tests {
             element: Element::B, ..Default::default()
         };
 
-        assert_eq!(hypovalence(&atom, &vec![ ]), Some(3));
+        assert_eq!(hypovalence(&atom, &vec![ ]), Ok(Some(3)));
     }
 
     #[test]
@@ -46,7 +47,7 @@ mod tests {
 
         assert_eq!(hypovalence(&atom, &vec![
             Bond { tid: 1, style: None }
-        ]), Some(2));
+        ]), Ok(Some(2)));
     }
 
     #[test]
@@ -59,7 +60,7 @@ mod tests {
             Bond { tid: 1, style: Some(Style::Single) },
             Bond { tid: 2, style: None },
             Bond { tid: 3, style: None }
-        ]), Some(0));
+        ]), Ok(Some(0)));
     }
 
     #[test]
@@ -68,7 +69,7 @@ mod tests {
             element: Element::C, hcount: Some(1), ..Default::default()
         };
 
-        assert_eq!(hypovalence(&atom, &vec![ ]), Some(3));
+        assert_eq!(hypovalence(&atom, &vec![ ]), Ok(Some(3)));
     }
 
     #[test]
@@ -80,7 +81,7 @@ mod tests {
         assert_eq!(hypovalence(&atom, &vec![
             Bond { tid: 1, style: Some(Style::Single) },
             Bond { tid: 2, style: Some(Style::Single) },
-        ]), Some(2));
+        ]), Ok(Some(2)));
     }
 
     #[test]
@@ -92,7 +93,7 @@ mod tests {
         assert_eq!(hypovalence(&atom, &vec![
             Bond { tid: 1, style: Some(Style::Double) },
             Bond { tid: 2, style: Some(Style::Up) },
-        ]), Some(1));
+        ]), Ok(Some(1)));
     }
 
     #[test]
@@ -105,7 +106,7 @@ mod tests {
             Bond { tid: 1, style: Some(Style::Aromatic) },
             Bond { tid: 2, style: Some(Style::Aromatic) },
             Bond { tid: 3, style: Some(Style::Single) },
-        ]), Some(1));
+        ]), Ok(Some(1)));
     }
 
     #[test]
@@ -116,7 +117,7 @@ mod tests {
 
         assert_eq!(hypovalence(&atom, &vec![
             Bond { tid: 1, style: Some(Style::Single) },
-        ]), Some(2));
+        ]), Ok(Some(2)));
     }
 
     #[test]
@@ -129,7 +130,7 @@ mod tests {
             Bond { tid: 1, style: Some(Style::Double) },
             Bond { tid: 2, style: None },
             Bond { tid: 3, style: None },
-        ]), Some(1));
+        ]), Ok(Some(1)));
     }
 
     #[test]
@@ -141,6 +142,6 @@ mod tests {
         assert_eq!(hypovalence(&atom, &vec![
             Bond { tid: 2, style: None },
             Bond { tid: 3, style: None },
-        ]), None);
+        ]), Ok(None));
     }
 }

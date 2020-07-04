@@ -1,21 +1,21 @@
 use crate::mol::{ Atom, Bond, Style };
-use super::hypovalence;
+use super::{ hypovalence, Error };
 
 /// Returns the implicit hydrogen count for the atom, or None if the
 /// atom isn't a member of the valence model.
-pub fn implicit_hydrogens(atom: &Atom, bonds: &Vec<Bond>) -> Option<u8> {
+pub fn implicit_hydrogens(atom: &Atom, bonds: &Vec<Bond>) -> Result<Option<u8>, Error> {
     match atom.hcount {
-        Some(_) => None,
+        Some(_) => Ok(None),
         None => {
-            match hypovalence(atom, bonds) {
+            match hypovalence(atom, bonds)? {
                 Some(delta) => {
                     if delta > 0 && aromatic(atom, bonds) {
-                        Some(delta - 1)
+                        Ok(Some(delta - 1))
                     } else {
-                        Some(delta)
+                        Ok(Some(delta))
                     }
                 },
-                None => None
+                None => Ok(None)
             }
         }
     }
@@ -43,28 +43,28 @@ mod tests {
     fn default() {
         let atom = Atom { ..Default::default() };
 
-        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Some(4));
+        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Ok(Some(4)));
     }
 
     #[test]
     fn zero_h() {
         let atom = Atom { hcount: Some(0), ..Default::default() };
 
-        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), None);
+        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Ok(None));
     }
 
     #[test]
     fn one_h() {
         let atom = Atom { hcount: Some(2), ..Default::default() };
 
-        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), None);
+        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Ok(None));
     }
 
     #[test]
     fn aromatic_flag() {
         let atom = Atom { aromatic: true, ..Default::default() };
 
-        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Some(3));
+        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Ok(Some(3)));
     }
 
     #[test]
@@ -73,13 +73,13 @@ mod tests {
 
         assert_eq!(implicit_hydrogens(&atom, &vec![
             Bond { tid: 1, style: Some(Style::Aromatic) }
-        ]), Some(2));
+        ]), Ok(Some(2)));
     }
 
     #[test]
     fn nonmember_element() {
         let atom = Atom { element: Element::Sn, ..Default::default() };
 
-        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), None);
+        assert_eq!(implicit_hydrogens(&atom, &vec![ ]), Ok(None));
     }
 }
