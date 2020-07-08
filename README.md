@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-purr = "0.5"
+purr = "0.6"
 ```
 
 ## Examples
@@ -21,39 +21,48 @@ use purr::valence::implicit_hydrogens;
 use purr::mol::{ Mol, Atom, Bond, Element };
 
 fn main() -> Result<(), Error> {
-    let mol = read(&"OC[CH3]")?;
+    let atoms = read(&"OC[CH3]")?;
+     assert_eq!(atoms, vec![
+         Atom {
+             nub: Nub { element: Element::O, ..Default::default() },
+             bonds: vec![
+                 Bond { tid: 1, style: None }
+             ]
+         },
+         Atom {
+             nub: Default::default(),
+             bonds: vec![
+                 Bond { tid: 0, style: None },
+                 Bond { tid: 2, style: None }
+             ]
+         },
+         Atom {
+             nub: Nub {
+                 hcount: Some(3), charge: Some(0), ..Default::default()
+             },
+             bonds: vec![
+                Bond { tid: 1, style: None }
+             ]
+         }
+     ]);
 
-    assert_eq!(mol, Mol {
-        atoms: vec![
-            Atom { element: Element::O, ..Default::default() },
-            Atom { ..Default::default() },
-            Atom { hcount: Some(3), charge: Some(0), ..Default::default() }
-        ],
-        bonds: vec![
-            vec![ Bond { tid: 1, style: None } ],
-            vec![ Bond { tid: 0, style: None }, Bond { tid: 2, style: None } ],
-            vec![ Bond { tid: 1, style: None } ]
-        ]
-    });
+     assert_eq!(implicit_hydrogens(&atoms[0]), Ok(Some(1)));
+     assert_eq!(implicit_hydrogens(&atoms[1]), Ok(Some(2)));
+     assert_eq!(implicit_hydrogens(&atoms[2]), Ok(None));
 
-    assert_eq!(implicit_hydrogens(&mol.atoms[0], &mol.bonds[0]), Some(1));
-    assert_eq!(implicit_hydrogens(&mol.atoms[1], &mol.bonds[1]), Some(2));
-    assert_eq!(implicit_hydrogens(&mol.atoms[2], &mol.bonds[2]), None);
-
-    Ok(())
+     Ok(())
 }
 ```
 
-Syntax errors are caught and the index of the error is returned. Some semantic
-errors are caught, but index reporting is not currently available.
+Errors are reported with the character index.
 
 ```rust
-use purr::read::read;
+use purr::read::{ read, Error };
 
 fn main() {
     let mol = read(&"OCCXC");
 
-    assert_eq!(mol.err(), Some(Err::InvalidCharacter(3)));
+    assert_eq!(mol.err(), Some(Error::InvalidCharacter(3)));
 }
 ```
 

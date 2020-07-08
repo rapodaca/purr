@@ -1,18 +1,18 @@
-use crate::mol::{ Atom, Bond };
+use crate::mol::{ Atom };
 use super::{ targets, valence, Error };
 
 /// Returns the difference between the next-nearest target valence and
 /// the bond order sum. Returns None if valence targets are not defined.
 /// Includes hcount, but disregards aromatic flag.
 /// Returns error if target valences are available but none match.
-pub fn hypovalence(atom: &Atom, bonds: &Vec<Bond>) -> Result<Option<u8>, Error> {
-    match targets(atom) {
+pub fn hypovalence(atom: &Atom) -> Result<Option<u8>, Error> {
+    match targets(&atom.nub) {
         Some(targets) => {
-            let sum = valence(bonds);
+            let sum = valence(&atom.bonds);
 
             for target in targets {
                 if target >= sum {
-                    match atom.hcount {
+                    match atom.nub.hcount {
                         Some(hcount) => return Ok(Some(target - sum - hcount)),
                         None => return Ok(Some(target - sum))
                     }
@@ -28,120 +28,144 @@ pub fn hypovalence(atom: &Atom, bonds: &Vec<Bond>) -> Result<Option<u8>, Error> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mol::{ Style, Element };
+    use crate::mol::{ Bond, Style, Element, Nub };
 
     #[test]
     fn boron() {
         let atom = Atom {
-            element: Element::B, ..Default::default()
+            nub: Nub { element: Element::B, ..Default::default() },
+            bonds: vec![ ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![ ]), Ok(Some(3)));
+        assert_eq!(hypovalence(&atom), Ok(Some(3)));
     }
 
     #[test]
     fn boron_none() {
         let atom = Atom {
-            element: Element::B, ..Default::default()
-        };
+            nub: Nub { element: Element::B, ..Default::default() },
+            bonds: vec![
+                Bond { tid: 1, style: None }
+            ]
+        };;
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: None }
-        ]), Ok(Some(2)));
+        assert_eq!(hypovalence(&atom), Ok(Some(2)));
     }
 
     #[test]
     fn boron_single_none_none() {
         let atom = Atom {
-            element: Element::B, ..Default::default()
+            nub: Nub { element: Element::B, ..Default::default() },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Single) },
+                Bond { tid: 2, style: None },
+                Bond { tid: 3, style: None }
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Single) },
-            Bond { tid: 2, style: None },
-            Bond { tid: 3, style: None }
-        ]), Ok(Some(0)));
+        assert_eq!(hypovalence(&atom), Ok(Some(0)));
     }
 
     #[test]
     fn carbon_one_hydrogen() {
         let atom = Atom {
-            element: Element::C, hcount: Some(1), ..Default::default()
+            nub: Nub {
+                element: Element::C, hcount: Some(1), ..Default::default()
+            },
+            bonds: vec![ ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![ ]), Ok(Some(3)));
+        assert_eq!(hypovalence(&atom), Ok(Some(3)));
     }
 
     #[test]
     fn carbon_single_single() {
         let atom = Atom {
-            element: Element::C, ..Default::default()
+            nub: Nub {
+                element: Element::C, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Single) },
+                Bond { tid: 2, style: Some(Style::Single) },
+            ]
         };
-
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Single) },
-            Bond { tid: 2, style: Some(Style::Single) },
-        ]), Ok(Some(2)));
+        
+        assert_eq!(hypovalence(&atom), Ok(Some(2)));
     }
 
     #[test]
     fn carbon_double_up() {
         let atom = Atom {
-            element: Element::C, ..Default::default()
+            nub: Nub {
+                element: Element::C, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Double) },
+                Bond { tid: 2, style: Some(Style::Up) },
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Double) },
-            Bond { tid: 2, style: Some(Style::Up) },
-        ]), Ok(Some(1)));
+        assert_eq!(hypovalence(&atom), Ok(Some(1)));
     }
 
     #[test]
     fn carbon_aromatic_aromatic_single() {
         let atom = Atom {
-            element: Element::C, ..Default::default()
+            nub: Nub {
+                element: Element::C, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Aromatic) },
+                Bond { tid: 2, style: Some(Style::Aromatic) },
+                Bond { tid: 3, style: Some(Style::Single) },
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Aromatic) },
-            Bond { tid: 2, style: Some(Style::Aromatic) },
-            Bond { tid: 3, style: Some(Style::Single) },
-        ]), Ok(Some(1)));
+        assert_eq!(hypovalence(&atom), Ok(Some(1)));
     }
 
     #[test]
     fn nitrogen_single() {
         let atom = Atom {
-            element: Element::N, ..Default::default()
+            nub: Nub {
+                element: Element::N, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Single) },
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Single) },
-        ]), Ok(Some(2)));
+        assert_eq!(hypovalence(&atom), Ok(Some(2)));
     }
 
     #[test]
     fn nitrogen_double_none_none() {
         let atom = Atom {
-            element: Element::N, ..Default::default()
+            nub: Nub {
+                element: Element::N, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 1, style: Some(Style::Double) },
+                Bond { tid: 2, style: None },
+                Bond { tid: 3, style: None },
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 1, style: Some(Style::Double) },
-            Bond { tid: 2, style: None },
-            Bond { tid: 3, style: None },
-        ]), Ok(Some(1)));
+        assert_eq!(hypovalence(&atom), Ok(Some(1)));
     }
 
     #[test]
     fn titanium_none_none() {
         let atom = Atom {
-            element: Element::Ti, ..Default::default()
+            nub: Nub {
+                element: Element::Ti, ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 2, style: None },
+                Bond { tid: 3, style: None },
+            ]
         };
 
-        assert_eq!(hypovalence(&atom, &vec![
-            Bond { tid: 2, style: None },
-            Bond { tid: 3, style: None },
-        ]), Ok(None));
+        assert_eq!(hypovalence(&atom), Ok(None));
     }
 }

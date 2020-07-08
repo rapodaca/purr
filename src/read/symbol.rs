@@ -1,10 +1,10 @@
 use crate::util::Scanner;
 use super::error::Error;
-use crate::mol::Atom;
-use crate::mol::Element;
+pub use crate::mol::Element;
+pub use crate::mol::Nub;
 
 pub fn symbol(
-    scanner: &mut Scanner, atom: &mut Atom
+    scanner: &mut Scanner, nub: &mut Nub
 ) -> Result<(), Error> {
     if scanner.done() {
         return Err(Error::EndOfLine);
@@ -244,8 +244,8 @@ pub fn symbol(
 
     match element_aromatic {
         Some((element, aromatic)) => {
-            atom.element = element;
-            atom.aromatic = aromatic;
+            nub.element = element;
+            nub.aromatic = aromatic;
 
             Ok(())
         },
@@ -286,10 +286,10 @@ mod test {
     #[test]
     fn aromatic_boron_eol() {
         let mut scanner = Scanner::new(&"b");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom {
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub {
             element: Element::B, aromatic: true, ..Default::default()
         });
         assert_eq!(scanner.cursor(), 1);
@@ -298,10 +298,10 @@ mod test {
     #[test]
     fn carbon_eol() {
         let mut scanner = Scanner::new(&"c");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom {
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub {
             element: Element::C, aromatic: true, ..Default::default()
         });
         assert_eq!(scanner.cursor(), 1);
@@ -310,10 +310,10 @@ mod test {
     #[test]
     fn aromatic_boron_unknown() {
         let mut scanner = Scanner::new(&"bx");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom {
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub {
             element: Element::B, aromatic: true, ..Default::default()
         });
         assert_eq!(scanner.cursor(), 1);
@@ -342,250 +342,250 @@ mod test {
     #[test]
     fn actinium_eol() {
         let mut scanner = Scanner::new(&"Ac");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Ac, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Ac, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn boron_eol() {
         let mut scanner = Scanner::new(&"B");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::B, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::B, ..Default::default() });
         assert_eq!(scanner.cursor(), 1);
     }
 
     #[test]
     fn boron_unknown() {
         let mut scanner = Scanner::new(&"Bx");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::B, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::B, ..Default::default() });
         assert_eq!(scanner.cursor(), 1);
     }
 
     #[test]
     fn barium_eol() {
         let mut scanner = Scanner::new(&"Ba");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Ba, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Ba, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn dubnium_eol() {
         let mut scanner = Scanner::new(&"Db");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Db, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Db, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn einsteinium_eol() {
         let mut scanner = Scanner::new(&"Es");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Es, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Es, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn iron_eol() {
         let mut scanner = Scanner::new(&"Fe");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Fe, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Fe, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn gadolinium_eol() {
         let mut scanner = Scanner::new(&"Ga");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Ga, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Ga, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn mercury_eol() {
         let mut scanner = Scanner::new(&"Hg");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Hg, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Hg, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn indium_eol() {
         let mut scanner = Scanner::new(&"In");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::In, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::In, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn krypton_eol() {
         let mut scanner = Scanner::new(&"Kr");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Kr, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Kr, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn lutetiium_eol() {
         let mut scanner = Scanner::new(&"Lu");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Lu, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Lu, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn magnesioum_eol() {
         let mut scanner = Scanner::new(&"Mg");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Mg, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Mg, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn niobium_eol() {
         let mut scanner = Scanner::new(&"Nb");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Nb, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Nb, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn osmium_eol() {
         let mut scanner = Scanner::new(&"Os");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Os, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Os, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn palladium_eol() {
         let mut scanner = Scanner::new(&"Pd");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Pd, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Pd, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn rutherfordium_eol() {
         let mut scanner = Scanner::new(&"Rf");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Rf, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Rf, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn seaborgium_eol() {
         let mut scanner = Scanner::new(&"Sg");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Sg, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Sg, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn throrium_eol() {
         let mut scanner = Scanner::new(&"Tl");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Tl, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Tl, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn uranium_eol() {
         let mut scanner = Scanner::new(&"U");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::U, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::U, ..Default::default() });
         assert_eq!(scanner.cursor(), 1);
     }
 
     #[test]
     fn vanadium_eol() {
         let mut scanner = Scanner::new(&"V");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::V, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::V, ..Default::default() });
         assert_eq!(scanner.cursor(), 1);
     }
 
     #[test]
     fn tungsten_eol() {
         let mut scanner = Scanner::new(&"W");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::W, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::W, ..Default::default() });
         assert_eq!(scanner.cursor(), 1);
     }
 
     #[test]
     fn xenon_eol() {
         let mut scanner = Scanner::new(&"Xe");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Xe, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Xe, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
     
     #[test]
     fn ytterbium_eol() {
         let mut scanner = Scanner::new(&"Yb");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Yb, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Yb, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 
     #[test]
     fn zirconium_eol() {
         let mut scanner = Scanner::new(&"Zr");
-        let mut atom = Default::default();
+        let mut nub = Default::default();
 
-        assert_eq!(symbol(&mut scanner, &mut atom), Ok(()));
-        assert_eq!(atom, Atom { element: Element::Zr, ..Default::default() });
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub { element: Element::Zr, ..Default::default() });
         assert_eq!(scanner.cursor(), 2);
     }
 }

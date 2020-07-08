@@ -1,9 +1,9 @@
 pub use super::error::Error;
-pub use crate::mol::Atom;
 pub use crate::util::Scanner;
+pub use crate::mol::Nub;
 pub use crate::mol::Element;
 
-pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Nub>, Error> {
     match scanner.peek() {
         Some('b') => pop_and_go(scanner, Element::B, true),
         Some('c') => pop_and_go(scanner, Element::C, true),
@@ -16,7 +16,7 @@ pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
             match scanner.peek() {
                 Some('r') => pop_and_go(scanner, Element::Br, false),
-                _ => Ok(Some(Atom {
+                _ => Ok(Some(Nub {
                     element: Element::B, ..Default::default()
                 }))
             }
@@ -26,7 +26,7 @@ pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
             match scanner.peek() {
                 Some('l') => pop_and_go(scanner, Element::Cl, false),
-                _ => Ok(Some(Atom {
+                _ => Ok(Some(Nub {
                     element: Element::C, ..Default::default()
                 }))
             }
@@ -43,10 +43,10 @@ pub fn bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
 fn pop_and_go(
     scanner: &mut Scanner, element: Element, aromatic: bool
-) -> Result<Option<Atom>, Error> {
+) -> Result<Option<Nub>, Error> {
     scanner.pop();
 
-    Ok(Some(Atom { element, aromatic, ..Default::default() }))
+    Ok(Some(Nub { element, aromatic, ..Default::default() }))
 }
 
 #[cfg(test)]
@@ -58,7 +58,7 @@ mod tests {
         let mut scanner = Scanner::new(&"c");
         let result = bare_atom(&mut scanner);
 
-        assert_eq!(result, Ok(Some(Atom {
+        assert_eq!(result, Ok(Some(Nub {
             element: Element::C, aromatic: true, ..Default::default()
         })));
         assert_eq!(scanner.pop(), None);
@@ -69,7 +69,7 @@ mod tests {
         let mut scanner = Scanner::new(&"C");
         let result = bare_atom(&mut scanner);
 
-        assert_eq!(result, Ok(Some(Atom {
+        assert_eq!(result, Ok(Some(Nub {
             element: Element::C, ..Default::default()
         })));
         assert_eq!(scanner.pop(), None);
@@ -80,7 +80,7 @@ mod tests {
         let mut scanner = Scanner::new(&"Cl");
         let result = bare_atom(&mut scanner);
 
-        assert_eq!(result, Ok(Some(Atom {
+        assert_eq!(result, Ok(Some(Nub {
             element: Element::Cl, ..Default::default()
         })));
         assert_eq!(scanner.pop(), None);

@@ -1,14 +1,12 @@
 use crate::util::Scanner;
-use crate::mol::{ Builder, Mol, Style, Atom };
+use crate::mol::{ Builder, Style, Atom, Nub, Error as MolError };
 use super::error::Error;
 use super::bare_atom::bare_atom;
 use super::bracket_atom::bracket_atom;
 
-/// Reads a string representation of a SMILES. Supports all features,
-/// including aromaticity, double bond conformation, and tetrahedral atom
-/// parity.
-/// 
-/// Supports the feature set found in *[SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)*. This is a subset of
+/// Reads a string representation of a SMILES. Supports the feature set found
+/// in *[SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)*.
+/// This is a subset of
 /// features supported by [OpenSMILES](http://opensmiles.org). The missing
 /// features are:
 ///
@@ -18,32 +16,43 @@ use super::bracket_atom::bracket_atom;
 /// ```rust
 /// use purr::read::{ read, Error };
 /// use purr::valence::implicit_hydrogens;
-/// use purr::mol::{ Mol, Atom, Bond, Element };
+/// use purr::mol::{ Atom, Bond, Nub, Element };
 ///
 /// fn main() -> Result<(), Error> {
-///     let mol = read(&"OC[CH3]")?;
+///     let atoms = read(&"OC[CH3]")?;
+///     
+///     assert_eq!(atoms, vec![
+///         Atom {
+///             nub: Nub { element: Element::O, ..Default::default() },
+///             bonds: vec![
+///                 Bond { tid: 1, style: None }
+///             ]
+///         },
+///         Atom {
+///             nub: Default::default(),
+///             bonds: vec![
+///                 Bond { tid: 0, style: None },
+///                 Bond { tid: 2, style: None }
+///             ]
+///         },
+///         Atom {
+///             nub: Nub {
+///                 hcount: Some(3), charge: Some(0), ..Default::default()
+///             },
+///             bonds: vec![
+///                 Bond { tid: 1, style: None }
+///             ]
+///         }
+///     ]);
 ///
-///     assert_eq!(mol, Mol {
-///         atoms: vec![
-///             Atom { element: Element::O, ..Default::default() },
-///             Atom { ..Default::default() },
-///             Atom { hcount: Some(3), charge: Some(0), ..Default::default() }
-///         ],
-///         bonds: vec![
-///             vec![ Bond { tid: 1, style: None } ],
-///             vec![ Bond { tid: 0, style: None }, Bond { tid: 2, style: None } ],
-///             vec![ Bond { tid: 1, style: None } ]
-///         ]
-///     });
-///
-///     assert_eq!(implicit_hydrogens(&mol.atoms[0], &mol.bonds[0]), Some(1));
-///     assert_eq!(implicit_hydrogens(&mol.atoms[1], &mol.bonds[1]), Some(2));
-///     assert_eq!(implicit_hydrogens(&mol.atoms[2], &mol.bonds[2]), None);
+///     assert_eq!(implicit_hydrogens(&atoms[0]), Ok(Some(1)));
+///     assert_eq!(implicit_hydrogens(&atoms[1]), Ok(Some(2)));
+///     assert_eq!(implicit_hydrogens(&atoms[2]), Ok(None));
 ///
 ///     Ok(())
 /// }
 /// ```
-pub fn read(text: &str) -> Result<Mol, Error> {
+pub fn read(text: &str) -> Result<Vec<Atom>, Error> {
     let mut scanner = Scanner::new(text);
 
     if scanner.done() {
@@ -63,9 +72,10 @@ pub fn read(text: &str) -> Result<Mol, Error> {
                     break Err(Error::InvalidCharacter(state.scanner.cursor()))
                 }
 
-                break match state.builder.to_mol() {
-                    Ok(molecule) => Ok(molecule),
-                    Err(_) => Err(Error::InvalidState)
+                break match state.builder.to_atoms() {
+                    Ok(atoms) => Ok(atoms),
+                    Err(MolError::OpenCycles(_)) => Err(Error::EndOfLine),
+                    Err(error) => Err(Error::MolError(state.scanner.cursor(), error))
                 }
             }
         }
@@ -74,7 +84,7 @@ pub fn read(text: &str) -> Result<Mol, Error> {
     }
 }
 
-fn either_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+fn either_atom(scanner: &mut Scanner) -> Result<Option<Nub>, Error> {
     match bare_atom(scanner)? {
         Some(atom) => Ok(Some(atom)),
         None => bracket_atom(scanner)
@@ -152,11 +162,13 @@ fn dot(state: &mut State) -> Result<bool, Error> {
 
 // <rnum> ::= <digit> | "%" <digit> <digit>
 fn rnum(state: &mut State) -> Result<bool, Error> {
+    let cursor = state.scanner.cursor();
+
     match digits(state)? {
         Some(rnum) => {
             match state.builder.cut(rnum) {
                 Ok(()) => Ok(true),
-                Err(_) => Err(Error::MismatchedStyle)
+                Err(error) => Err(Error::MolError(cursor, error))
             }
         },
         None => Ok(false)
@@ -287,408 +299,451 @@ mod tests {
     fn open_cycle() {
         let mol = read(&"C1CC");
 
-        assert_eq!(mol, Err(Error::InvalidState));
+        assert_eq!(mol, Err(Error::EndOfLine));
+    }
+
+    #[test]
+    fn mismatched_style() {
+        let mol = read(&"C-1CC=1");
+
+        assert_eq!(mol, Err(Error::MolError(6, MolError::MismatchedStyle(2, 0))));
     }
 
     #[test]
     fn methane() {
         let mol = read(&"C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![ vec![ ] ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Nub { element: Element::C, ..Default::default() },
+                bonds: vec![ ]
+            }
+        ]);
     }
 
     #[test]
     fn ammonia() {
         let mol = read(&"N").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::N, ..Default::default() }
-            ],
-            bonds: vec![ vec![ ] ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Nub { element: Element::N, ..Default::default() },
+                bonds: vec![ ]
+            }
+        ]);
     }
 
     #[test]
     fn kitchen_sink_head() {
         let mol = read(&"[15n@H+:123]").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom {
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Nub {
                     element: Element::N, isotope: Some(15), aromatic: true,
                     parity: Some(Parity::Counterclockwise),
                     hcount: Some(1), charge: Some(1), map: 123
-                }
-            ],
-            bonds: vec! [ vec![ ] ]
-        });
+                },
+                bonds: vec![ ]
+            }
+        ]);
     }
 
     #[test]
     fn kitchen_sink_body() {
         let mol = read(&"C.[15n@H+:123]").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { ..Default::default() },
-                Atom {
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(), bonds: vec![ ]
+            },
+            Atom {
+                nub: Nub {
                     element: Element::N, isotope: Some(15), aromatic: true,
                     parity: Some(Parity::Counterclockwise),
                     hcount: Some(1), charge: Some(1), map: 123
-                }
-            ],
-            bonds: vec! [ vec![ ], vec![ ] ]
-        });
+
+                },
+                bonds: vec![ ]
+            }
+        ]);
     }
 
     #[test]
     fn ethane() {
         let mol = read(&"CC").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: None } ],
-                vec![ Bond { tid: 0, style: None } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: None } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: None } ]
+            }
+        ]);
     }
 
     #[test]
     fn ethane_with_explicit_bond() {
         let mol = read(&"C-C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Single) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Single) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Single) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Single) } ]
+            }
+        ]);
     }
 
     #[test]
     fn ethene() {
         let mol = read(&"C=C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Double) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Double) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Double) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Double) } ]
+            }
+        ]);
     }
 
     #[test]
     fn aromatic_ethene() {
         let mol = read(&"C:C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Aromatic) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Aromatic) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Aromatic) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Aromatic) } ]
+            }
+        ]);
     }
 
     #[test]
     fn up_ethane() {
         let mol = read(&"C/C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Up) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Down) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Up) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Down) } ]
+            }
+        ]);
     }
 
     #[test]
     fn down_ethane() {
         let mol = read(&"C\\C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Down) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Up) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Down) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Up) } ]
+            }
+        ]);
     }
 
     #[test]
     fn ethyne() {
         let mol = read(&"C#C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Triple) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Triple) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Triple) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Triple) } ]
+            }
+        ]);
     }
 
     #[test]
     fn c2() {
         let mol = read(&"C$C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Quadruple) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Quadruple) } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Quadruple) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: Some(Style::Quadruple) } ]
+            }
+        ]);
     }
 
     #[test]
     fn methane_hydrate() {
         let mol = read(&"C.O").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::O, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ ],
-                vec![ ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ ]
+            },
+            Atom {
+                nub: Nub { element: Element::O, ..Default::default() },
+                bonds: vec![ ]
+            }
+        ]);
     }
 
     #[test]
     fn ethane_hydrate() {
         let mol = read(&"O.CC").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::O, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ ],
-                vec![ Bond { tid: 2, style: None } ],
-                vec![ Bond { tid: 1, style: None } ]
-            ]
-        });
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Nub { element: Element::O, ..Default::default() },
+                bonds: vec![ ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 2, style: None } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: None } ]
+            }
+        ]);
     }
 
     #[test]
     fn propane() {
         let mol = read(&"CCC").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: None } ],
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: None } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![ Bond { tid: 1, style: None } ]
-            ]
-        });
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: None } ]
+            }
+        ]);
     }
 
     #[test]
     fn branched_propane() {
         let mol = read(&"C(C)C").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![ Bond { tid: 0, style: None } ],
-                vec![ Bond { tid: 0, style: None } ]
-            ]
-        });
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: None } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 0, style: None } ]
+            }
+        ]);
     }
 
     #[test]
     fn propene() {
         let mol = read(&"C=CC").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Double) } ],
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: Some(Style::Double) } ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: Some(Style::Double) },
                     Bond { tid: 2, style: None }
-                ],
-                vec![ Bond { tid: 1, style: None } ]
-            ]
-        });
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![ Bond { tid: 1, style: None } ]
+            }
+        ]);
     }
 
     #[test]
     fn bromochloroflurormethane() {
         let mol = read(&"C(F)(Cl)Br").unwrap();
 
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::F, ..Default::default() },
-                Atom { element: Element::Cl, ..Default::default() },
-                Atom { element: Element::Br, ..Default::default() },
-            ],
-            bonds: vec![
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 2, style: None },
                     Bond { tid: 3, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Nub { element: Element::F, ..Default::default() },
+                bonds: vec![
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            },
+            Atom {
+                nub: Nub { element: Element::Cl, ..Default::default() },
+                bonds: vec![
+                    Bond { tid: 0, style: None }
+                ]
+            },
+            Atom {
+                nub: Nub { element: Element::Br, ..Default::default() },
+                bonds: vec![
+                    Bond { tid: 0, style: None }
+                ]
+            },
+        ]);
     }
 
     #[test]
     fn nested_parens() {
-        //                        0 1 2 3 4
+        //               0 1 2 3 4
         let mol = read(&"C(C(C)C)C").unwrap();
-        let c = Atom { element: Element::C, ..Default::default() };
 
-        assert_eq!(mol, Mol {
-            atoms: vec![ c, c, c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None },
-                    Bond { tid: 4, style: None }
-                ],
-                vec![
+                    Bond { tid: 4, style: None },
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None },
-                    Bond { tid: 3, style: None }
-                ],
-                vec![
+                    Bond { tid: 3, style: None },
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            },
+        ]);
     }
 
     #[test]
     fn monocycle() {
-        //                        0 12
+        //               0 12
         let mol = read(&"C1CC1").unwrap();
-        
-        assert_eq!(mol, Mol {
-            atoms: vec![
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() },
-                Atom { element: Element::C, ..Default::default() }
-            ],
-            bonds: vec![
-                vec![
+
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 2, style: None },
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            }
+        ]);
     }
 
     #[test]
     fn bicycle() {
-        //                        0  12 3
+        //               0  12 3
         let mol = read(&"C12CC1C2").unwrap();
-        let c = Atom { element: Element::C, ..Default::default() };
         
-        assert_eq!(mol, Mol {
-            atoms: vec![ c, c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 2, style: None },
                     Bond { tid: 3, style: None },
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 0, style: None },
-                    Bond { tid: 3, style: None }
-                ],
-                vec![
+                    Bond { tid: 3, style: None },
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
                     Bond { tid: 2, style: None },
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            },
+        ]);
     }
 }

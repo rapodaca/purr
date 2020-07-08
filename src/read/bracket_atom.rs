@@ -1,17 +1,17 @@
-use crate::mol::Atom;
+use crate::mol::Nub;
 use crate::mol::Parity;
 use super::error::Error;
 use super::symbol::symbol;
 use crate::util::Scanner;
 
-pub fn bracket_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+pub fn bracket_atom(scanner: &mut Scanner) -> Result<Option<Nub>, Error> {
     if let Some('[') = scanner.peek() {
         scanner.pop();
     } else {
         return Ok(None);
     }
 
-    let mut atom = Atom {
+    let mut atom = Nub {
         hcount: Some(0), charge: Some(0), ..Default::default()
     };
 
@@ -34,7 +34,7 @@ pub fn bracket_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
     }
 }
 
-fn chiral(scanner: &mut Scanner, atom: &mut Atom) {
+fn chiral(scanner: &mut Scanner, atom: &mut Nub) {
     if let Some('@') = scanner.peek() {
         scanner.pop();
 
@@ -48,7 +48,7 @@ fn chiral(scanner: &mut Scanner, atom: &mut Atom) {
     }
 }
 
-fn hcount(scanner: &mut Scanner, atom: &mut Atom) {
+fn hcount(scanner: &mut Scanner, atom: &mut Nub) {
     if let Some('H') = scanner.peek() {
         scanner.pop();
 
@@ -65,7 +65,7 @@ fn hcount(scanner: &mut Scanner, atom: &mut Atom) {
     }
 }
 
-fn charge(scanner: &mut Scanner, atom: &mut Atom) {
+fn charge(scanner: &mut Scanner, atom: &mut Nub) {
     match scanner.peek() {
         Some('+') => {
             scanner.pop();
@@ -113,7 +113,7 @@ fn charge(scanner: &mut Scanner, atom: &mut Atom) {
     }
 }
 
-fn map(scanner: &mut Scanner, atom: &mut Atom) -> Result<(), Error> {
+fn map(scanner: &mut Scanner, atom: &mut Nub) -> Result<(), Error> {
     match scanner.peek() {
         Some(':') => {
             scanner.pop();
@@ -255,7 +255,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[C]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(0), ..Default::default()
         }));
     }
@@ -265,7 +265,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[c]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), aromatic: true,
             charge: Some(0), ..Default::default()
         }));
@@ -276,7 +276,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[13C]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(0), isotope: Some(13),
             ..Default::default()
         }));
@@ -287,7 +287,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[013C]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), isotope: Some(13), charge: Some(0), 
             ..Default::default()
         }));
@@ -298,7 +298,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[CH]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(1), charge: Some(0), ..Default::default()
         }));
     }
@@ -308,7 +308,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[CH2]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(2), charge: Some(0), ..Default::default()
         }));
     }
@@ -318,7 +318,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[C+]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(1), ..Default::default()
         }));
     }
@@ -328,7 +328,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[C+1]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(1), ..Default::default()
         }));
     }
@@ -338,7 +338,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Ca+2]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Ca,
             charge: Some(2), ..Default::default()
         }));
@@ -349,7 +349,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Ca++]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Ca,
             charge: Some(2), ..Default::default()
         }));
@@ -360,7 +360,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Zn+15]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Zn,
             charge: Some(15), ..Default::default()
         }));
@@ -371,7 +371,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Cl-]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Cl,
             charge: Some(-1), ..Default::default()
         }));
@@ -382,7 +382,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Cl-1]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Cl,
             charge: Some(-1), ..Default::default()
         }));
@@ -393,7 +393,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[O-2]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::O,
             charge: Some(-2), ..Default::default()
         }));
@@ -404,7 +404,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[O--]");
         let result = bracket_atom(&mut scanner).unwrap();
 
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::O,
             charge: Some(-2), ..Default::default()
         }));
@@ -415,7 +415,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[Ti-15]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), element: Element::Ti,
             charge: Some(-15), ..Default::default()
         }));
@@ -426,7 +426,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[C:000]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(0),  ..Default::default()
         }));
     }
@@ -436,7 +436,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[C:999]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             hcount: Some(0), charge: Some(0), map: 999, ..Default::default()
         }));
     }
@@ -446,7 +446,7 @@ mod tests {
         let mut scanner = Scanner::new(&"[15n@H+:123]");
         let result = bracket_atom(&mut scanner).unwrap();
     
-        assert_eq!(result, Some(Atom {
+        assert_eq!(result, Some(Nub {
             isotope: Some(15), element: Element::N, aromatic: true,
             hcount: Some(1), charge: Some(1), map: 123,
             parity: Some(Parity::Counterclockwise)

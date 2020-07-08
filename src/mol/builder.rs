@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use super::atom::Atom;
-use super::bond::Bond;
-use super::mol::Mol;
-use super::style::Style;
+use super::Atom;
+use super::Bond;
+use super::Nub;
+use super::Style;
+use super::Error;
 use super::match_styles::match_styles;
 
 pub struct Builder {
-    atoms: Vec<Atom>, 
-    bonds: Vec<Vec<Bond>>,
+    atoms: Vec<Atom>,
     style: Option<Style>,
     stack: Vec<usize>,
     root: usize,
@@ -16,32 +16,38 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn new(root: Atom) -> Self {
-        Self {
-            atoms: vec![ root ],
-            bonds: vec![ vec![ ] ],
-            style: None,
-            stack: vec![ ],
-            root: 0,
-            cuts: HashMap::new()
-        }
+    pub fn new(root: Nub ) -> Self {
+       Self {
+           atoms: vec![ Atom::new(root) ],
+           style: None,
+           stack: vec![ ],
+           root: 0,
+           cuts: HashMap::new()
+       }
     }
 
-    pub fn root(&mut self, atom: Atom) {
-        self.add_atom(atom);
-    }
-
-    pub fn extend(&mut self, atom: Atom) {
-        let sid = self.root;
-        let tid = self.atoms.len();
-        let style = self.style.take();
-
-        self.add_atom(atom);
-        self.add_bond(sid, tid, style);
+    pub fn root(&mut self, nub: Nub) {
+        self.add_atom(nub);
     }
 
     pub fn bond(&mut self, style: Style) {
         self.style.replace(style);
+    }
+
+    pub fn cut(&mut self, rnum: u8) -> Result<(), Error> {
+        match self.cuts.remove(&rnum) {
+            Some(cut) => self.close_cut(cut),
+            None => Ok(self.open_cut(rnum))
+        }
+    }
+
+    pub fn extend(&mut self, nub: Nub) {
+        let sid = self.root;
+        let tid = self.atoms.len();
+        let style = self.style.take();
+
+        self.add_atom(nub);
+        self.add_bond(sid, tid, style);
     }
 
     pub fn open(&mut self) {
@@ -52,37 +58,28 @@ impl Builder {
         self.root = self.stack.pop().unwrap();
     }
 
-    pub fn cut(&mut self, rnum: u8) -> Result<(), Error> {
-        match self.cuts.remove(&rnum) {
-            Some(cut) => self.close_cut(cut),
-            None => Ok(self.open_cut(rnum))
-        }
-    }
-
-    pub fn to_mol(self) -> Result<Mol, Error> {
+    pub fn to_atoms(self) -> Result<Vec<Atom>, Error> {
         if !self.stack.is_empty() {
-            return Err(Error::OpenBranch);
+            return Err(Error::OpenBranches(self.stack));
         }
 
         if !self.cuts.is_empty() {
-            return Err(Error::OpenCycle);
+            let rnums = self.cuts.keys().cloned().collect::<Vec<_>>();
+
+            return Err(Error::OpenCycles(rnums));
         }
 
-        Ok(Mol {
-            atoms: self.atoms,
-            bonds: self.bonds
-        })
+        Ok(self.atoms)
     }
 
-    fn add_atom(&mut self, atom: Atom) {
+    fn add_atom(&mut self, nub: Nub) {
         self.root = self.atoms.len();
 
-        self.bonds.push(vec![ ]);
-        self.atoms.push(atom);
+        self.atoms.push(Atom { nub, bonds: vec![ ] });
     }
 
     fn add_bond(&mut self, sid: usize, tid: usize, style: Option<Style>) {
-        self.bonds.get_mut(sid).unwrap().push(Bond { tid, style });
+        self.atoms[sid].bonds.push(Bond { tid, style });
 
         let reversed_style = match style {
             Some(Style::Up) => Some(Style::Down),
@@ -90,14 +87,14 @@ impl Builder {
             _ => style
         };
 
-        self.bonds.get_mut(tid).unwrap().push(Bond {
+        self.atoms[tid].bonds.push(Bond {
             tid: sid, style: reversed_style
         });
     }
 
     fn open_cut(&mut self, rnum: u8) {
         let id = self.root;
-        let bonds = self.bonds.get_mut(id).unwrap();
+        let bonds = &mut self.atoms[id].bonds;
         let index = bonds.len();
         let style = self.style.take();
 
@@ -108,29 +105,22 @@ impl Builder {
     fn close_cut(&mut self, cut: Cut) -> Result<(), Error> {
         let sid = self.root;
         let tid = cut.id;
-        let bond = self.bonds.get_mut(tid).unwrap().get_mut(cut.index).unwrap();
+        let bond = self.atoms[tid].bonds.get_mut(cut.index).unwrap();
 
         match match_styles(bond.style, self.style.take()) {
             Some((left, right)) => {
                 std::mem::replace(bond, Bond {
                     tid: sid, style: left
                 });
-                self.bonds.get_mut(sid).unwrap().push(Bond {
+                self.atoms[sid].bonds.push(Bond {
                     tid, style: right
                 });
 
                 Ok(())
             },
-            None => Err(Error::MismatchedStyle)
+            None => Err(Error::MismatchedStyle(sid, tid))
         }
     }
-}
-
-#[derive(PartialEq, Eq, Debug)]
-pub enum Error {
-    MismatchedStyle,
-    OpenBranch,
-    OpenCycle
 }
 
 struct Cut {
@@ -141,12 +131,11 @@ struct Cut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use crate::Element;
     use crate::mol::Element;
 
     #[test]
     fn cut_given_mismatch() {
-        let c = Atom { element: Element::C, ..Default::default() };
+        let c = Nub { element: Element::C, ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.bond(Style::Double);
@@ -155,136 +144,123 @@ mod tests {
         builder.extend(c);
         builder.bond(Style::Single);
 
-        assert_eq!(builder.cut(1), Err(Error::MismatchedStyle));
+        assert_eq!(builder.cut(1), Err(Error::MismatchedStyle(2, 0)));
     }
 
     #[test]
-    fn to_mol_given_open_branch() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_open_branch() {
+        let c = Nub { element: Element::C, ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.open();
 
-        assert_eq!(builder.to_mol(), Err(Error::OpenBranch));
+        assert_eq!(builder.to_atoms(), Err(Error::OpenBranches(vec![ 0 ])));
     }
 
     #[test]
-    fn to_mol_given_open_cycle() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_open_cycle() {
+        let c = Nub { element: Element::C, ..Default::default() };
         let mut builder = Builder::new(c);
 
         assert_eq!(builder.cut(1), Ok(()));
-
-        assert_eq!(builder.to_mol(), Err(Error::OpenCycle));
+        assert_eq!(builder.to_atoms(), Err(Error::OpenCycles(vec![ 1 ])));
     }
 
     #[test]
-    fn to_mol_given_methane() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_methane() {
+        let c = Nub { ..Default::default() };
         let builder = Builder::new(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c ],
-            bonds: vec![ vec![ ] ] 
-        });
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom { nub: c, bonds: vec![ ] }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_ethane() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_ethane() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: None } ],
-                vec![ Bond { tid: 0, style: None } ]
-            ]
-        });
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![ Bond { tid: 1, style: None } ]
+            },
+            Atom {
+                nub: c, bonds: vec![ Bond { tid: 0, style: None } ]
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_ethane_up() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_ethane_up() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.bond(Style::Up);
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Up) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Down) } ]
-            ]
-        });
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![ Bond { tid: 1, style: Some(Style::Up) } ]
+            },
+            Atom {
+                nub: c, bonds: vec![ Bond { tid: 0, style: Some(Style::Down) } ]
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_ethene() {
-        let c = Atom { element: Element::C, ..Default::default() };
-        let mut builder = Builder::new(c);
-
-        builder.bond(Style::Double);
-        builder.extend(c);
-
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c ],
-            bonds: vec![
-                vec![ Bond { tid: 1, style: Some(Style::Double) } ],
-                vec![ Bond { tid: 0, style: Some(Style::Double) } ]
-            ]
-        });
-    }
-
-    #[test]
-    fn to_mol_given_methane_hydrate() {
-        let c = Atom { element: Element::C, ..Default::default() };
-        let o = Atom { element: Element::O, ..Default::default() };
+    fn to_atoms_given_methane_hydrate() {
+        let c = Nub { ..Default::default() };
+        let o = Nub { element: Element::O, ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.root(o);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, o ],
-            bonds: vec![
-                vec![ ],
-                vec![ ]
-            ]
-        });
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![ ]
+            },
+            Atom {
+                nub: o, bonds: vec![ ]
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_propene() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_propene() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.bond(Style::Double);
         builder.extend(c);
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: Some(Style::Double) }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 0, style: Some(Style::Double) },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: None }
                 ]
-            ]
-        });
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_branch() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_branch() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.open();
@@ -292,26 +268,29 @@ mod tests {
         builder.close();
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            },
+            Atom {
+                nub: c, bonds: vec![
+                    Bond { tid: 0, style: None }
+                ]
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_sequential_branch() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_sequential_branch() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.open();
@@ -322,30 +301,35 @@ mod tests {
         builder.close();
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 2, style: None },
                     Bond { tid: 3, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            },
+            Atom {
+                nub: c, bonds: vec![
+                    Bond { tid: 0, style: None }
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
+                    Bond { tid: 0, style: None }
+                ]
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_double_nested_branch() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_double_nested_branch() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.open();
@@ -357,34 +341,41 @@ mod tests {
         builder.close();
         builder.extend(c);
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c, c, c ],
-            bonds: vec![
-                vec![
-                    Bond { tid: 1, style: None },
-                    Bond { tid: 4, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None },
-                    Bond { tid: 2, style: None },
-                    Bond { tid: 3, style: None }
-                ],
-                vec![
-                    Bond { tid: 1, style: None }
-                ],
-                vec![
-                    Bond { tid: 1, style: None }
-                ],
-                vec![
-                    Bond { tid: 0, style: None }
-                ]
-            ]
-        });
+        assert_eq!(builder.to_atoms(), Ok(vec![
+                Atom {
+                    nub: c, bonds: vec![
+                        Bond { tid: 1, style: None },
+                        Bond { tid: 4, style: None }
+                    ]
+                },
+                Atom {
+                    nub: c, bonds: vec![
+                        Bond { tid: 0, style: None },
+                        Bond { tid: 2, style: None },
+                        Bond { tid: 3, style: None }
+                    ]
+                },
+                Atom {
+                    nub: c, bonds: vec![
+                        Bond { tid: 1, style: None }
+                    ]
+                },
+                Atom {
+                    nub: c, bonds: vec![
+                        Bond { tid: 1, style: None }
+                    ]
+                },
+                Atom {
+                    nub: c, bonds: vec![
+                        Bond { tid: 0, style: None }
+                    ]
+                }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_cyclopropane() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_cyclopropane() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         assert_eq!(builder.cut(1), Ok(()));
@@ -392,28 +383,31 @@ mod tests {
         builder.extend(c);
         assert_eq!(builder.cut(1), Ok(()));
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 2, style: None },
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 0, style: None }
                 ]
-            ]
-        });
+            }
+        ]));
     }
 
     #[test]
-    fn to_mol_given_cyclopropene_first() {
-        let c = Atom { element: Element::C, ..Default::default() };
+    fn to_atoms_given_cyclopropene_first() {
+        let c = Nub { ..Default::default() };
         let mut builder = Builder::new(c);
 
         builder.bond(Style::Double);
@@ -422,22 +416,25 @@ mod tests {
         builder.extend(c);
         assert_eq!(builder.cut(1), Ok(()));
 
-        assert_eq!(builder.to_mol().unwrap(), Mol {
-            atoms: vec![ c, c, c ],
-            bonds: vec![
-                vec![
+        assert_eq!(builder.to_atoms(), Ok(vec![
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 2, style: Some(Style::Double) },
                     Bond { tid: 1, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 0, style: None },
                     Bond { tid: 2, style: None }
-                ],
-                vec![
+                ]
+            },
+            Atom {
+                nub: c, bonds: vec![
                     Bond { tid: 1, style: None },
                     Bond { tid: 0, style: Some(Style::Double) }
                 ]
-            ]
-        });
+            }
+        ]));
     }
 }
