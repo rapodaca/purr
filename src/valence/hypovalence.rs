@@ -19,7 +19,7 @@ pub fn hypovalence(atom: &Atom) -> Result<Option<u8>, Error> {
                 }
             }
             
-            Err(Error::UnmatchableValence)
+            Ok(Some(0))
         },
         None => Ok(None)
     }
@@ -60,6 +60,19 @@ mod tests {
                 Bond { tid: 1, style: Some(Style::Single) },
                 Bond { tid: 2, style: None },
                 Bond { tid: 3, style: None }
+            ]
+        };
+
+        assert_eq!(hypovalence(&atom), Ok(Some(0)));
+    }
+
+    #[test]
+    fn chlorine_none_none() {
+        let atom = Atom {
+            nub: Nub { element: Element::Cl, ..Default::default() },
+            bonds: vec![
+                Bond { tid: 1, style: None },
+                Bond { tid: 2, style: None }
             ]
         };
 

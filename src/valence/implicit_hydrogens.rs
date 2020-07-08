@@ -100,4 +100,19 @@ mod tests {
 
         assert_eq!(implicit_hydrogens(&atom), Ok(None));
     }
+
+    // see: https://www.slideshare.net/NextMoveSoftware/a-de-facto-standard-or-a-freeforall (slide 16)
+    #[test]
+    fn overconnected() {
+        let atom = Atom {
+            nub: Nub {
+                element: Element::Cl, ..Default::default()
+            }, bonds: vec![
+                Bond { tid: 1, style: None },
+                Bond { tid: 2, style: None }
+            ]
+        };
+
+        assert_eq!(implicit_hydrogens(&atom), Ok(Some(0)));
+    }
 }
