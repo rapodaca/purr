@@ -11,14 +11,25 @@ pub fn symbol(
     }
 
     let element_aromatic = match scanner.pop() {
+        Some('a') => match scanner.pop() {
+            Some('s') => Some((Element::As, true)),
+            None => return Err(Error::EndOfLine),
+            _ => return Err(Error::InvalidCharacter(scanner.cursor() - 1))
+        },
         Some('b') => Some((Element::B, true)),
         Some('c') => Some((Element::C, true)),
         Some('n') => Some((Element::N, true)),
         Some('o') => Some((Element::O, true)),
         Some('p') => Some((Element::P, true)),
-        Some('s') => Some((Element::S, true)),
-        Some('A') => {
-            match scanner.peek() {
+        Some('s') => match scanner.peek() {
+            Some('e') => {
+                scanner.pop();
+
+                Some((Element::Se, true))
+            },
+            _ => Some((Element::S, true))
+        },
+        Some('A') => match scanner.peek() {
                 Some('c') => pop_and_go(Element::Ac, scanner),
                 Some('g') => pop_and_go(Element::Ag, scanner),
                 Some('l') => pop_and_go(Element::Al, scanner),
@@ -29,7 +40,6 @@ pub fn symbol(
                 Some('u') => pop_and_go(Element::Au, scanner),
                 None => return Err(Error::EndOfLine),
                 _ => None
-            }
         },
         Some('B') => {
             match scanner.peek() {
@@ -284,6 +294,26 @@ mod test {
     }
 
     #[test]
+    fn lower_a_eol() {
+        let mut scanner = Scanner::new(&"a");
+        let mut atom = Default::default();
+
+        assert_eq!(symbol(
+            &mut scanner, &mut atom), Err(Error::EndOfLine)
+        );
+    }
+
+    #[test]
+    fn lower_ax_eol() {
+        let mut scanner = Scanner::new(&"ax");
+        let mut atom = Default::default();
+
+        assert_eq!(symbol(
+            &mut scanner, &mut atom), Err(Error::InvalidCharacter(1))
+        );
+    }
+
+    #[test]
     fn aromatic_boron_eol() {
         let mut scanner = Scanner::new(&"b");
         let mut nub = Default::default();
@@ -293,6 +323,30 @@ mod test {
             element: Element::B, aromatic: true, ..Default::default()
         });
         assert_eq!(scanner.cursor(), 1);
+    }
+
+    #[test]
+    fn aromatic_arsenic_eol() {
+        let mut scanner = Scanner::new("as");
+        let mut nub = Default::default();
+
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub {
+            element: Element::As, aromatic: true, ..Default::default()
+        });
+        assert_eq!(scanner.cursor(), 2)
+    }
+
+    #[test]
+    fn aromatic_selenium_eol() {
+        let mut scanner = Scanner::new("se");
+        let mut nub = Default::default();
+
+        assert_eq!(symbol(&mut scanner, &mut nub), Ok(()));
+        assert_eq!(nub, Nub {
+            element: Element::Se, aromatic: true, ..Default::default()
+        });
+        assert_eq!(scanner.cursor(), 2)
     }
 
     #[test]
@@ -320,7 +374,7 @@ mod test {
     }
 
     #[test]
-    fn a_eol() {
+    fn upper_a_eol() {
         let mut scanner = Scanner::new(&"A");
         let mut atom = Default::default();
 
