@@ -47,7 +47,7 @@ mod tests {
             bonds: vec![
                 Bond { tid: 1, style: None }
             ]
-        };;
+        };
 
         assert_eq!(hypovalence(&atom), Ok(Some(2)));
     }
