@@ -183,6 +183,8 @@ fn digits(state: &mut State) -> Result<Option<u8>, Error> {
             digits.push(*state.scanner.pop().unwrap());
         },
         Some('%') => {
+            state.scanner.pop();
+
             for _ in 0..=1 {
                 match state.scanner.peek() {
                     Some('0'..='9') => {
@@ -682,6 +684,64 @@ mod tests {
     fn monocycle() {
         //               0 12
         let mol = read(&"C1CC1").unwrap();
+
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 2, style: None },
+                    Bond { tid: 1, style: None }
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 0, style: None },
+                    Bond { tid: 2, style: None }
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 1, style: None },
+                    Bond { tid: 0, style: None }
+                ]
+            }
+        ]);
+    }
+
+    #[test]
+    fn monocycle_with_matching_double_digit_rnum() {
+        let mol = read("C%10CC%10").unwrap();
+
+        assert_eq!(mol, vec![
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 2, style: None },
+                    Bond { tid: 1, style: None }
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 0, style: None },
+                    Bond { tid: 2, style: None }
+                ]
+            },
+            Atom {
+                nub: Default::default(),
+                bonds: vec![
+                    Bond { tid: 1, style: None },
+                    Bond { tid: 0, style: None }
+                ]
+            }
+        ]);
+    }
+
+    #[test]
+    fn monocycle_with_mixed_single_and_double_digit_rnum() {
+        let mol = read("C%01CC1").unwrap();
 
         assert_eq!(mol, vec![
             Atom {
