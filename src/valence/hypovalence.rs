@@ -8,14 +8,15 @@ use super::{ targets, valence, Error };
 pub fn hypovalence(atom: &Atom) -> Result<Option<u8>, Error> {
     match targets(&atom.nub) {
         Some(targets) => {
-            let sum = valence(&atom.bonds);
+            let hcount = match atom.nub.hcount {
+                Some(hcount) => hcount,
+                None => 0
+            };
+            let sum = valence(&atom.bonds) + hcount;
 
             for target in targets {
                 if target >= sum {
-                    match atom.nub.hcount {
-                        Some(hcount) => return Ok(Some(target - sum - hcount)),
-                        None => return Ok(Some(target - sum))
-                    }
+                    return Ok(Some(target - sum));
                 }
             }
             
@@ -180,5 +181,21 @@ mod tests {
         };
 
         assert_eq!(hypovalence(&atom), Ok(None));
+    }
+
+    #[test]
+    fn phosphorous_none_none_none_with_hydrogen() {
+        let atom = Atom {
+            nub: Nub {
+                element: Element::P, hcount: Some(1), ..Default::default()
+            },
+            bonds: vec![
+                Bond { tid: 2, style: None },
+                Bond { tid: 3, style: None },
+                Bond { tid: 4, style: None }
+            ]
+        };
+
+        assert_eq!(hypovalence(&atom), Ok(Some(1)))
     }
 }

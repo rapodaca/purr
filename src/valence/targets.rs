@@ -61,7 +61,7 @@ fn isoform(nub: &Nub) -> Option<Isoform> {
                 _ => None
             }
         },
-        Element::F | Element::Cl | Element::Br | Element::I | Element::As |
+        Element::F | Element::Cl | Element::Br | Element::I | Element::At |
         Element::Ts => {
             match nub.charge {
                 None => Some(Isoform::Halogen),
@@ -73,7 +73,7 @@ fn isoform(nub: &Nub) -> Option<Isoform> {
                 _ => None
             }
         },
-        Element::P => {
+        Element::P | Element::As => {
             match nub.charge {
                 None => Some(Isoform::Phosphorous),
                 Some(-2) => Some(Isoform::Halogen),
@@ -82,7 +82,7 @@ fn isoform(nub: &Nub) -> Option<Isoform> {
                 _ => None
             }
         },
-        Element::S => {
+        Element::S | Element::Se => {
             match nub.charge {
                 None => Some(Isoform::Sulfur),
                 Some(-1) => Some(Isoform::Halogen),
@@ -464,7 +464,7 @@ mod tests {
 
     #[test]
     fn astatine() {
-        let nub = Nub { element: Element::As, ..Default::default() };
+        let nub = Nub { element: Element::At, ..Default::default() };
 
         assert_eq!(targets(&nub), Some(vec![ 1 ]));
     }
@@ -528,6 +528,59 @@ mod tests {
         assert_eq!(targets(&nub), None);
     }
 
+    // ---
+    #[test]
+    fn arsenic() {
+        let nub = Nub { element: Element::As, ..Default::default() };
+
+        assert_eq!(targets(&nub), Some(vec![ 3, 5 ]));
+    }
+
+    #[test]
+    fn arsenic_minus_three() {
+        let nub = Nub {
+            element: Element::As, charge: Some(-3), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), None);
+    }
+
+    #[test]
+    fn arsenic_minus_two() {
+        let nub = Nub {
+            element: Element::As, charge: Some(-2), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 1 ]));
+    }
+
+    #[test]
+    fn arsenic_minus_one() {
+        let nub = Nub {
+            element: Element::As, charge: Some(-1), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 2, 4, 6 ]));
+    }
+
+    #[test]
+    fn arsenic_zero() {
+        let nub = Nub {
+            element: Element::As, charge: Some(0), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 3, 5]));
+    }
+
+    #[test]
+    fn arsenic_plus_one() {
+        let nub = Nub {
+            element: Element::As, charge: Some(1), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), None);
+    }
+
     #[test]
     fn sulfur() {
         let nub = Nub { element: Element::S, ..Default::default() };
@@ -575,6 +628,59 @@ mod tests {
     fn sulfur_plus_two() {
         let nub = Nub {
             element: Element::S, charge: Some(2), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), None);
+    }
+
+//  ---
+#[test]
+    fn selenium() {
+        let nub = Nub { element: Element::Se, ..Default::default() };
+
+        assert_eq!(targets(&nub), Some(vec![ 2, 4, 6 ]));
+    }
+
+    #[test]
+    fn selenium_minus_two() {
+        let nub = Nub {
+            element: Element::Se, charge: Some(-2), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), None);
+    }
+
+    #[test]
+    fn selenium_minus_one() {
+        let nub = Nub {
+            element: Element::Se, charge: Some(-1), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 1 ]));
+    }
+
+    #[test]
+    fn selenium_zero() {
+        let nub = Nub {
+            element: Element::Se, charge: Some(0), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 2, 4, 6 ]));
+    }
+
+    #[test]
+    fn selenium_plus_one() {
+        let nub = Nub {
+            element: Element::Se, charge: Some(1), ..Default::default()
+        };
+
+        assert_eq!(targets(&nub), Some(vec![ 3, 5 ]));
+    }
+
+    #[test]
+    fn selenium_plus_two() {
+        let nub = Nub {
+            element: Element::Se, charge: Some(2), ..Default::default()
         };
 
         assert_eq!(targets(&nub), None);
