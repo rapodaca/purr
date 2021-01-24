@@ -1,15 +1,16 @@
 [package]
 name = "purr"
-version = "0.6.3"
+version = "0.7.0"
 authors = ["The Purr Project Developers"]
 license = "MIT"
 edition = "2018"
 readme = "README.md"
 repository = "https://github.com/rapodaca/purr"
 description = """
-Primitives for reading the SMILES language in Rust.
+Primitives for reading and writing the SMILES language in Rust.
 """
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+
+[dev_dependencies]
+pretty_assertions="0.6.1"

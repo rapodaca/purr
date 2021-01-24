@@ -1,8 +1,5 @@
-use crate::mol::Error as MolError;
-
-#[derive(PartialEq, Debug)]
+#[derive(Debug,PartialEq)]
 pub enum Error {
     EndOfLine,
-    InvalidCharacter(usize),
-    MolError(usize, MolError)
+    InvalidCharacter(usize)
 }

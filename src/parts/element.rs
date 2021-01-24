@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Debug,PartialEq)]
 pub enum Element {
 //  0   1   2   3   4   5   6   7   8   9
         H,  He, Li, Be, B,  C,  N,  O,  F,  // 0
@@ -13,10 +13,4 @@ pub enum Element {
     Th, Pa, U,  Np, Pu, Am, Cm, Bk, Cf, Es, // 9
     Fm, Md, No, Lr, Rf, Db, Sg, Bh, Hs, Mt, // 10
     Ds, Rg, Cn, Nh, Fl, Mc, Lv, Ts, Og      // 11
-}
-
-impl Default for Element {
-    fn default() -> Self {
-        Self::C
-    }
 }

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Scanner {
     cursor: usize,
     characters: Vec<char>
@@ -15,7 +16,7 @@ impl Scanner {
         self.cursor
     }
 
-    pub fn done(&self) -> bool {
+    pub fn is_done(&self) -> bool {
         self.cursor == self.characters.len()
     }
 
@@ -65,17 +66,17 @@ mod tests {
     }
 
     #[test]
-    fn done_given_done() {
+    fn is_done_given_done() {
         let scanner = Scanner::new(&"");
 
-        assert_eq!(scanner.done(), true);
+        assert_eq!(scanner.is_done(), true);
     }
 
     #[test]
-    fn done_given_not_done() {
+    fn is_done_given_not_done() {
         let scanner = Scanner::new(&"a");
 
-        assert_eq!(scanner.done(), false);
+        assert_eq!(scanner.is_done(), false);
     }
 
     #[test]

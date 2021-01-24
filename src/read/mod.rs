@@ -1,8 +1,23 @@
-mod symbol;
 mod error;
-mod bare_atom;
-mod bracket_atom;
+mod missing_character;
+mod read_bond;
+mod read_rnum;
+mod read_symbol;
+mod read_charge;
+mod read_bracket_atom;
+mod read_bare_atom;
 mod read;
+mod reading;
+mod scanner;
 
 pub use error::Error;
+pub use missing_character::missing_character;
+pub use read_bond::read_bond;
+pub use read_rnum::read_rnum;
+pub use read_symbol::read_symbol;
+pub use read_charge::read_charge;
+pub use read_bracket_atom::read_bracket_atom;
+pub use read_bare_atom::read_bare_atom;
 pub use read::read;
+pub use reading::Reading;
+pub use scanner::Scanner;
