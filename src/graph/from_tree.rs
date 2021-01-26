@@ -32,14 +32,16 @@ fn walk(
 
     if negate {
         match &mut atom.kind {
-            AtomKind::Bracket { parity, hcount, .. } => match parity {
-                Some(parity) => {
-                    if hcount.unwrap_or_default() > 0 {
-                        std::mem::replace(parity, parity.negate());
-                    }
-                },
-                None => ()
-            },
+            AtomKind::Bracket { parity, hcount, .. } => {
+                match parity {
+                    Some(parity) => {
+                        if hcount.unwrap_or_default() > 0 {
+                            std::mem::swap(parity, &mut parity.negate())
+                        }
+                    },
+                    None => ()
+                }
+            }
             _ => ()
         }
     }
