@@ -110,9 +110,9 @@ use purr::parts::{ AtomKind, BondKind };
 use purr::graph::{ Atom, Bond, from_tree };
 
 fn main() -> Result<(), Error> {
-    let root = read("*=*").unwrap().root;
+    let root = read("*=*")?.root;
 
-    assert_eq!(from_tree(root), vec![
+    assert_eq!(from_tree(root).expect("semantic error"), vec![
         Atom {
             kind: AtomKind::Star,
             bonds: vec![
