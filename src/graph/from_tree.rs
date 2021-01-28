@@ -31,19 +31,7 @@ fn walk(
     };
 
     if negate {
-        match &mut atom.kind {
-            AtomKind::Bracket { parity, hcount, .. } => {
-                match parity {
-                    Some(parity) => {
-                        if hcount.unwrap_or_default() > 0 {
-                            std::mem::swap(parity, &mut parity.negate())
-                        }
-                    },
-                    None => ()
-                }
-            }
-            _ => ()
-        }
+        negate_parity(&mut atom);
     }
 
     result.push(atom);
@@ -52,48 +40,72 @@ fn walk(
         let tid = result.len();
 
         match link {
-            tree::Link::Bond { kind, target } => match target {
-                tree::Target::Atom(target) => {
-                    let reverse = kind.reverse();
-
-                    result[id].bonds.push(Bond::new(kind, tid));
-                    walk(Some(Bond::new(reverse, id)), target, result, opens)?
-                },
-                tree::Target::Join(rnum) => match opens.entry(rnum) {
-                    Entry::Occupied(occupied) => {
-                        let open = occupied.remove();
-
-                        let (forward, reverse) = match reconcile_bonds(
-                            kind, open.kind
-                        ) {
-                            Some((forward, reverse)) => (
-                                Bond::new(forward, open.sid),
-                                Bond::new(reverse, id)
-                            ),
-                            None => return Err(
-                                Error::IncompatibleJoin(open.sid, id)
-                            )
-                        };
-
-                        result[id].bonds.push(forward);
-                        result[open.sid].bonds.insert(open.index, reverse)
-                    },
-                    Entry::Vacant(vacant) => {
-                        vacant.insert(Open {
-                            sid: id,
-                            kind: kind,
-                            index: result[id].bonds.len()
-                        });
-                    }
-                }
-            },
+            tree::Link::Bond { kind, target } =>
+                walk_bond(id, tid, target, kind, result, opens)?,
             tree::Link::Split(target) => {
-                walk(None, target, result, opens)?
+                walk(None, target, result, opens)?;
             }
         }
     }
 
     Ok(())
+}
+
+fn negate_parity(atom: &mut Atom) {
+    if let AtomKind::Bracket { parity, hcount, .. } = &mut atom.kind {
+        if let Some(parity) = parity {
+            if hcount.unwrap_or_default() > 0 {
+                std::mem::swap(parity, &mut parity.negate())
+            }
+        }
+    }
+}
+
+fn walk_bond(
+    sid: usize,
+    tid: usize,
+    target: tree::Target,
+    kind: BondKind,
+    result: &mut Vec<Atom>,
+    opens: &mut HashMap<u16, Open>
+) -> Result<(), Error> {
+    match target {
+        tree::Target::Atom(target) => {
+            let reverse = kind.reverse();
+
+            result[sid].bonds.push(Bond::new(kind, tid));
+            walk(Some(Bond::new(reverse, sid)), target, result, opens)
+        },
+        tree::Target::Join(rnum) => match opens.entry(rnum) {
+            Entry::Occupied(occupied) => {
+                let open = occupied.remove();
+
+                let (forward, reverse) = match reconcile_bonds(
+                    kind, open.kind
+                ) {
+                    Some((forward, reverse)) => (
+                        Bond::new(forward, open.sid),
+                        Bond::new(reverse, sid)
+                    ),
+                    None => return Err(
+                        Error::IncompatibleJoin(open.sid, sid)
+                    )
+                };
+
+                result[sid].bonds.push(forward);
+                result[open.sid].bonds.insert(open.index, reverse);
+                Ok(())
+            },
+            Entry::Vacant(vacant) => {
+                vacant.insert(Open {
+                    sid: sid,
+                    kind: kind,
+                    index: result[sid].bonds.len()
+                });
+                Ok(())
+            }
+        }
+    }
 }
 
 struct Open {
