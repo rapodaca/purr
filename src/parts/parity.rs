@@ -5,7 +5,7 @@ pub enum Parity {
 }
 
 impl Parity {
-    pub fn negate(&self) -> Self {
+    pub fn invert(&self) -> Self {
         match self {
             Parity::Clockwise => Parity::Counterclockwise,
             Parity::Counterclockwise => Parity::Clockwise

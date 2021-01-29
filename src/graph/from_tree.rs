@@ -55,7 +55,7 @@ fn negate_parity(atom: &mut Atom) {
     if let AtomKind::Bracket { parity, hcount, .. } = &mut atom.kind {
         if let Some(parity) = parity {
             if hcount.unwrap_or_default() > 0 {
-                std::mem::swap(parity, &mut parity.negate())
+                std::mem::swap(parity, &mut parity.invert())
             }
         }
     }
