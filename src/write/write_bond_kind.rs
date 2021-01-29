@@ -1,7 +1,7 @@
 use crate::parts::BondKind;
 
-pub fn write_bond_kind(kind: &BondKind) -> String {
-    String::from(match kind {
+pub fn write_bond_kind(kind: &BondKind, out: &mut String) {
+    out.push_str(match kind {
         BondKind::Elided => "",
         BondKind::Single => "-",
         BondKind::Double => "=",
@@ -21,14 +21,20 @@ mod tests {
     #[test]
     fn elided() {
         let kind = BondKind::Elided;
+        let mut out = String::new();
 
-        assert_eq!(write_bond_kind(&kind), "")
+        write_bond_kind(&kind, &mut out);
+
+        assert_eq!(out, "")
     }
 
     #[test]
     fn single() {
         let kind = BondKind::Single;
+        let mut out = String::new();
 
-        assert_eq!(write_bond_kind(&kind), "-")
+        write_bond_kind(&kind, &mut out);
+
+        assert_eq!(out, "-")
     }
 }

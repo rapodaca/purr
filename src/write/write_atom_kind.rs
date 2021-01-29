@@ -3,21 +3,17 @@ use crate::parts::{
     Element
 };
 
-pub fn write_atom_kind(kind: &AtomKind) -> String {
-    let mut out = String::new();
-
+pub fn write_atom_kind(kind: &AtomKind, out: &mut String) {
     match &kind {
-        AtomKind::Star => write_star(&mut out),
-        AtomKind::Aliphatic(aliphatic) => write_aliphatic(aliphatic, &mut out),
-        AtomKind::Aromatic(aromatic) => write_aromatic(aromatic, &mut out),
+        AtomKind::Star => write_star(out),
+        AtomKind::Aliphatic(aliphatic) => write_aliphatic(aliphatic, out),
+        AtomKind::Aromatic(aromatic) => write_aromatic(aromatic, out),
         AtomKind::Bracket {
             isotope, symbol, hcount, charge, parity, map
         } => write_bracket(
-            isotope, symbol, hcount, charge, parity, map, &mut out
+            isotope, symbol, hcount, charge, parity, map, out
         )
     }
-
-    out
 }
 
 fn write_star(out: &mut String) {
@@ -279,22 +275,31 @@ mod tests {
     #[test]
     fn star() {
         let kind = AtomKind::Star;
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "*")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "*")
     }
 
     #[test]
     fn aliphatic() {
         let kind = AtomKind::Aliphatic(Aliphatic::C);
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "C")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "C")
     }
 
     #[test]
     fn aromatic() {
         let kind = AtomKind::Aromatic(Aromatic::C);
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "c")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "c")
     }
 
     #[test]
@@ -307,8 +312,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*]")
     }
 
     #[test]
@@ -321,8 +329,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[c]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[c]")
     }
 
     #[test]
@@ -335,8 +346,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[C]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[C]")
     }
 
     #[test]
@@ -349,8 +363,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[12*]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[12*]")
     }
 
     #[test]
@@ -363,8 +380,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*@@]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*@@]")
     }
 
     #[test]
@@ -377,8 +397,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*@]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*@]")
     }
 
     #[test]
@@ -391,8 +414,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*]")
     }
 
     #[test]
@@ -405,8 +431,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*H]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*H]")
     }
 
     #[test]
@@ -419,8 +448,11 @@ mod tests {
             charge: None,
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*H2]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*H2]")
     }
 
     #[test]
@@ -433,8 +465,11 @@ mod tests {
             charge: Some(0),
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*]")
     }
 
     #[test]
@@ -447,8 +482,11 @@ mod tests {
             charge: Some(1),
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*+]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*+]")
     }
 
     #[test]
@@ -461,8 +499,11 @@ mod tests {
             charge: Some(2),
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*+2]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*+2]")
     }
 
     #[test]
@@ -475,8 +516,11 @@ mod tests {
             charge: Some(-1),
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*-]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*-]")
     }
 
     #[test]
@@ -489,8 +533,11 @@ mod tests {
             charge: Some(-2),
             map: None
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*-2]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*-2]")
     }
 
     #[test]
@@ -503,8 +550,11 @@ mod tests {
             charge: None,
             map: Some(0)
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*]")
     }
 
     #[test]
@@ -517,8 +567,11 @@ mod tests {
             charge: None,
             map: Some(13)
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[*:13]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*:13]")
     }
 
     #[test]
@@ -531,7 +584,10 @@ mod tests {
             charge: Some(1),
             map: Some(42)
         };
+        let mut out = String::new();
 
-        assert_eq!(write_atom_kind(&kind), "[13C@@H+:42]")
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[13C@@H+:42]")
     }
 }
