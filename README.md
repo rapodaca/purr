@@ -1,11 +1,11 @@
 # Purr
 
-Primitives for reading the SMILES language in Rust. For details, see:
+Primitives for reading and writing the SMILES language in Rust. For details, see:
 
-- *[Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)*
+- [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)
 - [SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)
 - [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
-- *[SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)*)
+- [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
 
 ## Usage
 
