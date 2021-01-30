@@ -8,6 +8,13 @@ pub struct Atom {
 }
 
 impl Atom {
+    pub fn new(kind: AtomKind) -> Self {
+        Self {
+            kind,
+            bonds: vec![ ]
+        }
+    }
+
     pub fn is_aromatic(&self) -> bool {
         self.kind.is_aromatic()
     }

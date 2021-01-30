@@ -1,124 +1,152 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-use crate::tree;
-use crate::parts::{ AtomKind, BondKind };
+use crate::{ tree, parts };
 use super::{ Atom, Bond, reconcile_bonds, Error };
 
 pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
-    let mut result = Vec::new();
-    let mut opens = HashMap::new();
+    let mut stack = Vec::new();
+    let mut out = Vec::new();
+    let mut opens: HashMap<u16, Open> = HashMap::new();
 
-    walk(None, root, &mut result, &mut opens)?;
+    out.push(Atom::new(root.kind));
 
-    Ok(result)
+    for link in root.links.into_iter().rev() {
+        stack.push((0, link))
+    }
+
+    while let Some((sid, link)) = stack.pop() {
+        add_link(sid, link, &mut opens, &mut stack, &mut out)?
+    }
+
+    Ok(out)
 }
 
-fn walk(
-    input: Option<Bond>,
-    root: tree::Atom,
-    result: &mut Vec<Atom>,
-    opens: &mut HashMap<u16, Open>
+fn add_link(
+    sid: usize,
+    link: tree::Link,
+    opens: &mut HashMap<u16, Open>,
+    stack: &mut Vec<(usize, tree::Link)>,
+    out: &mut Vec<Atom>
 ) -> Result<(), Error> {
-    let id = result.len();
-    let negate = input.is_some();
-    let mut atom = Atom {
-        kind: root.kind,
-        bonds: match input {
-            Some(input) => vec![ input ],
-            None => vec![ ]
+    let links = match link {
+        tree::Link::Bond { kind: bond_kind, target } => {
+            match target {
+                tree::Target::Atom(target) => {
+                    extend(sid, target.kind, bond_kind, out);
+
+                    target.links
+                },
+                tree::Target::Join(rnum) => {
+                    join(sid, bond_kind, rnum, opens, out)?;
+                    
+                    return Ok(())
+                }
+            }
+        },
+        tree::Link::Split(target) => {
+            out.push(Atom::new(target.kind));
+
+            target.links
         }
     };
 
-    if negate {
-        negate_parity(&mut atom);
-    }
+    let tid = out.len() - 1;
 
-    result.push(atom);
-
-    for link in root.links {
-        let tid = result.len();
-
-        match link {
-            tree::Link::Bond { kind, target } =>
-                walk_bond(id, tid, target, kind, result, opens)?,
-            tree::Link::Split(target) => {
-                walk(None, target, result, opens)?;
-            }
-        }
+    for link in links.into_iter().rev() {
+        stack.push((tid, link))
     }
 
     Ok(())
 }
 
-fn negate_parity(atom: &mut Atom) {
-    if let AtomKind::Bracket { parity, hcount, .. } = &mut atom.kind {
+fn create_atom(
+    mut kind: parts::AtomKind,
+    input: &parts::BondKind,
+    tid: usize
+) -> Atom {
+    let bond = Bond { kind: input.reverse(), tid };
+
+    if let parts::AtomKind::Bracket { parity, hcount, .. } = &mut kind {
         if let Some(parity) = parity {
             if hcount.unwrap_or_default() > 0 {
                 std::mem::swap(parity, &mut parity.invert())
             }
         }
     }
+
+    let result = Atom { kind, bonds: vec![ bond ] };
+
+    result
 }
 
-fn walk_bond(
+fn extend(
     sid: usize,
-    tid: usize,
-    target: tree::Target,
-    kind: BondKind,
-    result: &mut Vec<Atom>,
-    opens: &mut HashMap<u16, Open>
+    atom: parts::AtomKind,
+    input: parts::BondKind,
+    out: &mut Vec<Atom>,
+) {
+    let tid = out.len();
+
+    out.push(create_atom(atom, &input, sid));
+
+    let source = &mut out[sid];
+
+    source.bonds.push(Bond {
+        kind: input,
+        tid: tid
+    });
+}
+
+fn join(
+    sid: usize,
+    bond_kind: parts::BondKind,
+    rnum: u16,
+    opens: &mut HashMap<u16, Open>,
+    out: &mut Vec<Atom>
 ) -> Result<(), Error> {
-    match target {
-        tree::Target::Atom(target) => {
-            let reverse = kind.reverse();
+    match opens.entry(rnum) {
+        Entry::Occupied(occupied) => {
+            let open = occupied.remove();
+            
+            let (forward, reverse) = match reconcile_bonds(
+                bond_kind, open.kind
+            ) {
+                Some((foreward, reverse)) => (
+                    Bond::new(foreward, open.sid),
+                    Bond::new(reverse, sid)
+                ),
+                None => return Err(
+                    Error::IncompatibleJoin(open.sid, sid)
+                )
+            };
 
-            result[sid].bonds.push(Bond::new(kind, tid));
-            walk(Some(Bond::new(reverse, sid)), target, result, opens)
+            out[sid].bonds.push(forward);
+            out[open.sid].bonds.insert(open.index, reverse);
         },
-        tree::Target::Join(rnum) => match opens.entry(rnum) {
-            Entry::Occupied(occupied) => {
-                let open = occupied.remove();
-
-                let (forward, reverse) = match reconcile_bonds(
-                    kind, open.kind
-                ) {
-                    Some((forward, reverse)) => (
-                        Bond::new(forward, open.sid),
-                        Bond::new(reverse, sid)
-                    ),
-                    None => return Err(
-                        Error::IncompatibleJoin(open.sid, sid)
-                    )
-                };
-
-                result[sid].bonds.push(forward);
-                result[open.sid].bonds.insert(open.index, reverse);
-                Ok(())
-            },
-            Entry::Vacant(vacant) => {
-                vacant.insert(Open {
-                    sid: sid,
-                    kind: kind,
-                    index: result[sid].bonds.len()
-                });
-                Ok(())
-            }
+        Entry::Vacant(vacant) => {
+            vacant.insert(Open {
+                sid: sid,
+                kind: bond_kind,
+                index: out[sid].bonds.len()
+            });
         }
     }
+
+    Ok(())
 }
 
 struct Open {
     sid: usize,
     index: usize,
-    kind: BondKind
+    kind: parts::BondKind
 }
 
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
     use crate::read::read;
-    use crate::parts::{ AtomKind, Aliphatic, BracketSymbol, Element, Parity };
+    use crate::parts::{ AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Parity };
     use super::*;
 
     #[test]
@@ -160,13 +188,13 @@ mod tests {
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
-                    Bond::new(BondKind::Elided, 1)
+                    Bond::new(parts::BondKind::Elided, 1)
                 ]
             },
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
-                    Bond::new(BondKind::Elided, 0)
+                    Bond::new(parts::BondKind::Elided, 0)
                 ]
             }
         ]))
@@ -179,15 +207,11 @@ mod tests {
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
-                bonds: vec![
-
-                ]
+                bonds: vec![ ]
             },
             Atom {
                 kind: AtomKind::Star,
-                bonds: vec![
-
-                ]
+                bonds: vec![ ]
             }
         ]))
     }
@@ -354,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn atom_parity_head_hydrogen() {
+    fn atom_parity_hydrogen_stereocentric() {
         let root = read("[C@H](F)(Cl)Br").unwrap().root;
 
         assert_eq!(from_tree(root).unwrap()[0], Atom {
@@ -375,30 +399,8 @@ mod tests {
     }
 
     #[test]
-    fn atom_parity_tail() {
-        let root = read("F[C@](C)(Cl)Br").unwrap().root;
-
-        assert_eq!(from_tree(root).unwrap()[1], Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Element(Element::C),
-                hcount: None,
-                charge: None,
-                parity: Some(Parity::Counterclockwise),
-                map: None
-            },
-            bonds: vec![
-                Bond::new(BondKind::Elided, 0),
-                Bond::new(BondKind::Elided, 2),
-                Bond::new(BondKind::Elided, 3),
-                Bond::new(BondKind::Elided, 4)
-            ]
-        })
-    }
-
-    #[test]
-    fn atom_parity_tail_hydrogen() {
-        let root = read("F[C@H](Cl)Br").unwrap().root;
+    fn atom_parity_hydrogen_nonstereocentric() {
+        let root = read("C[C@H](F)Cl").unwrap().root;
 
         assert_eq!(from_tree(root).unwrap()[1], Atom {
             kind: AtomKind::Bracket {
