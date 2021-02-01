@@ -21,7 +21,6 @@ purr = "0.7"
 Parse ethanol into an abstract syntax tree:
 
 ```rust
-// use purr::read::{ read, Reading, Error };
 use purr::{ read_smiles, Reading, ReadError };
 use purr::parts::{ AtomKind, Aliphatic, BondKind, Element, BracketSymbol };
 use purr::tree::{ Atom, Link, Target };
