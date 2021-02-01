@@ -25,6 +25,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn elided() {
+        let mut scanner = Scanner::new("X");
+
+        assert_eq!(read_bond(&mut scanner), BondKind::Elided)
+    }
+
+    #[test]
     fn single() {
         let mut scanner = Scanner::new("-");
 

@@ -1,8 +1,18 @@
+//! Primitives for reading and writing the [Simplified Molecular Line Input Line Entry System](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) (SMILES) language. Based on [OpenSMILES](http://opensmiles.org).
+//! For goals and rationale, see:
+//! 
+//! - [SMILES Formal Grammar](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)
+//! - [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)
+//! - [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
+//! - [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
+
 pub mod tree;
 pub mod graph;
 pub mod parts;
-pub mod read;
+pub(crate) mod read;
 pub mod write;
+
+pub use read::{ read as read_smiles, Reading, Error as ReadError };
 
 // https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790
 #[cfg(doctest)]

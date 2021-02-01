@@ -1,6 +1,22 @@
 use crate::tree::{ Atom, Link, Target };
 use super::{ write_atom_kind, write_bond_kind };
 
+/// Returns a String representing the given tree. Performs a depth-first
+/// traversal over the root atom. Branches are written in the order they occur
+/// in the tree.
+/// 
+/// ```
+/// use purr::{ read_smiles, ReadError };
+/// use purr::write::write;
+///
+/// fn main() -> Result<(), ReadError> {
+///     let root = read_smiles("c1ccccc1")?.root;
+///
+///     assert_eq!(write(&root), "c1ccccc1");
+///
+///     Ok(())
+/// }
+/// ```
 pub fn write(root: &Atom) -> String {
     let mut stack = Vec::new();
     let mut out = String::new();

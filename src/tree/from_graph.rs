@@ -88,7 +88,11 @@ fn invert(kind: &mut parts::AtomKind) {
     if let parts::AtomKind::Bracket { hcount, parity, .. } = kind {
         if let Some(p) = parity {
             if hcount.unwrap_or_default() > 0 {
-                std::mem::swap(p, &mut p.invert());
+                if p == &parts::Parity::Clockwise {
+                    std::mem::swap(p, &mut parts::Parity::Counterclockwise)
+                } else if p == &parts::Parity::Counterclockwise {
+                    std::mem::swap(p, &mut parts::Parity::Clockwise)
+                }
             }
         }
     }

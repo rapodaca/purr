@@ -1,14 +1,9 @@
 use crate::parts::{ Aliphatic, Aromatic };
 use crate::tree::{ Atom };
-use super::{ Scanner, Error };
+use super::{ Scanner, Error, missing_character };
 
-pub fn read_bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+pub fn read_organic(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
      match scanner.peek() {
-        Some('*') => {
-            scanner.pop();
-
-            Ok(Some(Atom::star()))
-        },
         Some('b') => aromatic(Aromatic::B, scanner),
         Some('c') => aromatic(Aromatic::C, scanner),
         Some('n') => aromatic(Aromatic::N, scanner),
@@ -20,7 +15,7 @@ pub fn read_bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
             match scanner.peek() {
                 Some('t') => aliphatic(Aliphatic::At, scanner),
-                _ => Err(Error::InvalidCharacter(scanner.cursor()))
+                _ => Err(missing_character(scanner))
             }
         },
         Some('B') => {
@@ -50,7 +45,7 @@ pub fn read_bare_atom(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
             match scanner.peek() {
                 Some('s') => aliphatic(Aliphatic::Ts, scanner),
-                _ => Err(Error::InvalidCharacter(scanner.cursor()))
+                _ => Err(missing_character(scanner))
             }
         }
         _ => Ok(None)
@@ -71,4 +66,58 @@ fn aliphatic(
     scanner.pop();
 
     Ok(Some(Atom::aliphatic(aliphatic)))
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use super::*;
+
+    #[test]
+    fn a_x() {
+        let mut scanner = Scanner::new("Ax");
+        let atom = read_organic(&mut scanner);
+
+        assert_eq!(atom, Err(Error::InvalidCharacter(1)))
+    }
+
+    #[test]
+    fn t_x() {
+        let mut scanner = Scanner::new("Tx");
+        let atom = read_organic(&mut scanner);
+
+        assert_eq!(atom, Err(Error::InvalidCharacter(1)))
+    }
+
+    #[test]
+    fn b_x() {
+        let mut scanner = Scanner::new("Bx");
+        let atom = read_organic(&mut scanner);
+
+        assert_eq!(atom, Ok(Some(Atom::aliphatic(Aliphatic::B))))
+    }
+
+    #[test]
+    fn c_x() {
+        let mut scanner = Scanner::new("Cx");
+        let atom = read_organic(&mut scanner);
+
+        assert_eq!(atom, Ok(Some(Atom::aliphatic(Aliphatic::C))))
+    }
+
+    #[test]
+    fn aromatic_carbon() {
+        let mut scanner = Scanner::new("c");
+        let atom = read_organic(&mut scanner);
+        
+        assert_eq!(atom, Ok(Some(Atom::aromatic(Aromatic::C))))
+    }
+
+    #[test]
+    fn chlorine() {
+        let mut scanner = Scanner::new("Cl");
+        let atom = read_organic(&mut scanner);
+        
+        assert_eq!(atom, Ok(Some(Atom::aliphatic(Aliphatic::Cl))))
+    }
 }

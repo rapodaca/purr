@@ -224,7 +224,8 @@ fn write_parity(parity: &Option<Parity>, out: &mut String) {
     match parity {
         Some(Parity::Clockwise) => out.push_str("@@"),
         Some(Parity::Counterclockwise) => out.push('@'),
-        None => ()
+        None => (),
+        _ => unimplemented!()
     }
 }
 

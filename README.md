@@ -2,10 +2,10 @@
 
 Primitives for reading and writing the SMILES language in Rust. For details, see:
 
-- [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)
 - [SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)
-- [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
 - [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
+- [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)
+- [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
 
 ## Usage
 
@@ -21,12 +21,13 @@ purr = "0.7"
 Parse ethanol into an abstract syntax tree:
 
 ```rust
-use purr::read::{ read, Reading, Error };
+// use purr::read::{ read, Reading, Error };
+use purr::{ read_smiles, Reading, ReadError };
 use purr::parts::{ AtomKind, Aliphatic, BondKind, Element, BracketSymbol };
 use purr::tree::{ Atom, Link, Target };
 
-fn main() -> Result<(), Error> {
-    let Reading { root, trace } = read("OC[CH3]")?;
+fn main() -> Result<(), ReadError> {
+    let Reading { root, trace } = read_smiles("OC[CH3]")?;
 
     assert_eq!(root, Atom {
         kind: AtomKind::Aliphatic(Aliphatic::O),
@@ -63,11 +64,11 @@ fn main() -> Result<(), Error> {
 It's often helpful to represent a tree as a string for visual inspection.
 
 ```rust
-    use purr::read::{ read, Error };
+    use purr::{ read_smiles, ReadError };
     use purr::write::write;
 
-    fn main() -> Result<(), Error> {
-        let root = read("c1ccccc1")?.root;
+    fn main() -> Result<(), ReadError> {
+        let root = read_smiles("c1ccccc1")?.root;
 
         assert_eq!(write(&root), "c1ccccc1");
 
@@ -78,10 +79,10 @@ It's often helpful to represent a tree as a string for visual inspection.
 The `trace` value maps each `Atom` index to a cursor position in the original string. This is useful when conveying semantic errors such as hypervalence. 
 
 ```rust
-use purr::read::{ read, Error };
+use purr::{ read_smiles, ReadError };
 
-fn main() -> Result<(), Error> {
-    let trace = read("C=C(C)(C)C")?.trace;
+fn main() -> Result<(), ReadError> {
+    let trace = read_smiles("C=C(C)(C)C")?.trace;
 
     assert_eq!(trace, vec![ 0, 2, 4, 7, 9 ]);
 
@@ -95,22 +96,22 @@ fn main() -> Result<(), Error> {
 Syntax errors are mapped to the character index.
 
 ```rust
-use purr::read::{ read, Error };
+use purr::{ read_smiles, ReadError };
 
 fn main() {
-    assert_eq!(read("OCCXC"), Err(Error::InvalidCharacter(3)));
+    assert_eq!(read_smiles("OCCXC"), Err(ReadError::InvalidCharacter(3)));
 }
 ```
 
 Sometimes it's more convenient to work with an adjacency (or graph-like) representation. This can be accomplished through the `graph::from_tree` method.
 
 ```rust
-use purr::read::{ read, Error };
+use purr::{ read_smiles, ReadError };
 use purr::parts::{ AtomKind, BondKind };
 use purr::graph::{ Atom, Bond, from_tree };
 
-fn main() -> Result<(), Error> {
-    let root = read("*=*")?.root;
+fn main() -> Result<(), ReadError> {
+    let root = read_smiles("*=*")?.root;
 
     assert_eq!(from_tree(root).expect("semantic error"), vec![
         Atom {

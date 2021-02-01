@@ -70,7 +70,11 @@ fn create_atom(
     if let parts::AtomKind::Bracket { parity, hcount, .. } = &mut kind {
         if let Some(parity) = parity {
             if hcount.unwrap_or_default() > 0 {
-                std::mem::swap(parity, &mut parity.invert())
+                if parity == &parts::Parity::Clockwise {
+                    std::mem::swap(parity, &mut parts::Parity::Counterclockwise)
+                } else if parity == &parts::Parity::Counterclockwise {
+                    std::mem::swap(parity, &mut parts::Parity::Clockwise)
+                }
             }
         }
     }

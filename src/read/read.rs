@@ -1,118 +1,116 @@
+use crate::tree::{ Atom, Link, Target };
 use crate::parts::{ BondKind };
-use crate::tree::{ Target, Atom, Link  };
 use super::{
-    Reading, Scanner, Error, missing_character,
-    read_bare_atom, read_bracket_atom, read_bond,
-    read_rnum
+    Scanner, Reading, Error, read_organic, read_bracket, read_bond,
+    missing_character, read_rnum
 };
 
+/// Reads a SMILES string, returning a Reading or Error if not successful.
+/// Uses the grammar published in [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/).
+/// 
+/// Branches are read in the order they appear in the string.
+/// 
+/// ```
+/// use purr::{ read_smiles, Reading, ReadError };
+/// use purr::parts::{ AtomKind, Aromatic };
+/// 
+/// fn main() -> Result<(), ReadError> {
+///     let Reading { root, trace } = read_smiles("c1ccccc1")?;
+/// 
+///     assert_eq!(root.kind, AtomKind::Aromatic(Aromatic::C));
+///     assert_eq!(trace, vec![ 0, 2, 3, 4, 5, 6 ]);
+/// 
+///     Ok(())
+/// }
+/// ```
+/// 
+/// The result type `Reading` is designed to allow semantic errors to be
+/// repoted in terms of a cursor position in the original string. In the
+/// example above, the second atom cursor position
+/// is accessed with `trace[1]`, which yields the value `2`. Indexing into
+/// the `trace` array is zero-based.
 pub fn read(smiles: &str) -> Result<Reading, Error> {
     let mut scanner = Scanner::new(smiles);
     let mut trace = Vec::new();
-
-    match read_run(&mut scanner, &mut trace)? {
-        Some(root) => if scanner.is_done() {
-            Ok(Reading {
-                root: root,
-                trace: trace
-            })
+    let root = match read_smiles(&mut scanner, &mut trace)? {
+        Some(root) => root,
+        None => if scanner.is_done() {
+            return Err(Error::EndOfLine)
         } else {
-            Err(Error::InvalidCharacter(scanner.cursor()))
-        },
-        None => Err(missing_character(&mut scanner))
+            return Err(Error::InvalidCharacter(scanner.cursor()))
+        }
+    };
+
+    if scanner.is_done() {
+        Ok(Reading {
+            root,
+            trace
+        })
+    } else {
+        Err(Error::InvalidCharacter(scanner.cursor()))
     }
 }
 
-// <run>    ::= <atom> <tail>*
-fn read_run(
+// <smiles> ::= <atom> <body>*
+fn read_smiles(
     scanner: &mut Scanner, trace: &mut Vec<usize>
 ) -> Result<Option<Atom>, Error> {
-    let mut atom = match read_atom(scanner, trace)? {
-        Some(atom) => atom,
+    let mut root = match read_atom(scanner, trace)? {
+        Some(root) => root,
         None => return Ok(None)
     };
 
-    loop {
-        match read_tail(scanner, trace)? {
-            Some(tail) => {
-                atom.links.push(tail);
-            },
-            None => break
-        }
+    while let Some(body) = read_body(scanner, trace)? {
+        root.links.push(body)
     }
 
-    Ok(Some(atom))
+    Ok(Some(root))
 }
 
-// <tail>   ::= <branch> | <block>
-fn read_tail(
+// <atom> ::= <organic> | <bracket> | <star>
+fn read_atom(
+    scanner: &mut Scanner, trace: &mut Vec<usize>
+) -> Result<Option<Atom>, Error> {
+    let cursor = scanner.cursor();
+    let result = match read_organic(scanner)? {
+        Some(atom) => atom,
+        None => match read_bracket(scanner)? {
+            Some(atom) => atom,
+            None => match scanner.peek() {
+                Some('*') => {
+                    scanner.pop();
+
+                    Atom::star()
+                },
+                _ => return Ok(None)
+            }
+        }
+    };
+
+    trace.push(cursor);
+
+    Ok(Some(result))
+}
+
+// <body> ::= <branch> | <split> | <union>
+fn read_body(
     scanner: &mut Scanner, trace: &mut Vec<usize>
 ) -> Result<Option<Link>, Error> {
     if let Some(branch) = read_branch(scanner, trace)? {
-        Ok(Some(branch))
-    } else {
-        read_block(scanner, trace)
+        return Ok(Some(branch))
     }
-}
 
-// <block>  ::= <split> | <chain>
-fn read_block(
-    scanner: &mut Scanner, trace: &mut Vec<usize>
-) -> Result<Option<Link>, Error> {
     if let Some(split) = read_split(scanner, trace)? {
-        Ok(Some(split))
-    } else {
-        read_chain(scanner, trace)
+        return Ok(Some(split))
     }
+
+    read_union(scanner, trace)
 }
 
-// <split>  ::= <dot> <run>
-fn read_split(
-    scanner: &mut Scanner, trace: &mut Vec<usize>
-) -> Result<Option<Link>, Error> {
-    match scanner.peek() {
-        Some('.') => {
-            scanner.pop();
-        },
-        _ => return Ok(None)
-    }
-
-    if let Some(run) = read_run(scanner, trace)? {
-        Ok(Some(Link::Split(run)))
-    } else {
-        Err(missing_character(scanner))
-    }
-}
-
-// <chain>  ::= <bond>? ( <run> | <rnum> )
-fn read_chain(
-    scanner: &mut Scanner, trace: &mut Vec<usize>
-) -> Result<Option<Link>, Error> {
-    let bond = read_bond(scanner);
-    let mut trace2 = Vec::new();
-
-    let target = if let Some(run) = read_run(scanner, &mut trace2)? {
-        Some(Target::Atom(run))
-    } else if let Some(cut) = read_rnum(scanner)? {
-        Some(Target::Join(cut))
-    } else {
-        None
-    };
-
-    if let Some(target) = target {
-        trace.append(&mut trace2);
-
-        Ok(Some(Link::Bond { kind: bond, target }))
-    } else if let BondKind::Elided = bond {
-        Ok(None)
-    } else {
-        Err(missing_character(scanner))
-    }
-}
-
-// <branch> ::= "(" <block> ")"
+// <branch> ::= "(" ( <dot> | <bond> )? <smiles> ")"
 fn read_branch(
-    scanner: &mut Scanner, trace: &mut Vec<usize>
+    scanner: &mut Scanner,
+    trace: &mut Vec<usize>
 ) -> Result<Option<Link>, Error> {
     match scanner.peek() {
         Some('(') => {
@@ -121,9 +119,26 @@ fn read_branch(
         _ => return Ok(None)
     }
 
-    let result = match read_block(scanner, trace)? {
-        Some(link) => link,
-        None => return Err(missing_character(scanner))
+    let result = match scanner.peek() {
+        Some('.') => {
+            scanner.pop();
+
+            match read_smiles(scanner, trace)? {
+                Some(target) => Link::Split(target),
+                None => return Err(missing_character(scanner))
+            }
+        },
+        _ => {
+            let kind = read_bond(scanner);
+
+            match read_smiles(scanner, trace)? {
+                Some(target) => Link::Bond {
+                    kind,
+                    target: Target::Atom(target)
+                },
+                None => return Err(missing_character(scanner))
+            }
+        }
     };
 
     match scanner.peek() {
@@ -136,20 +151,44 @@ fn read_branch(
     }
 }
 
-fn read_atom(
-    scanner: &mut Scanner, trace: &mut Vec<usize>
-) -> Result<Option<Atom>, Error> {
-    let cursor = scanner.cursor();
-    let atom = match read_bare_atom(scanner)? {
-        Some(atom) => Some(atom),
-        None => read_bracket_atom(scanner)?
-    };
-
-    if atom.is_some() {
-        trace.push(cursor)
+// <split> ::= <dot> <smiles>
+fn read_split(
+    scanner: &mut Scanner,
+    trace: &mut Vec<usize>
+) -> Result<Option<Link>, Error> {
+    match scanner.peek() {
+        Some('.') => {
+            scanner.pop();
+        },
+        _ => return Ok(None)
     }
 
-    Ok(atom)
+    match read_smiles(scanner, trace)? {
+        Some(smiles) => Ok(Some(Link::Split(smiles))),
+        _ => Err(missing_character(scanner))
+    }
+}
+
+// <union> ::= <bond>? ( <smiles> | <rnum> )
+fn read_union(
+    scanner: &mut Scanner,
+    trace: &mut Vec<usize>
+) -> Result<Option<Link>, Error> {
+    let bond_kind = read_bond(scanner);
+    let target = if let Some(smiles) = read_smiles(scanner, trace)? {
+        Target::Atom(smiles)
+    } else if let Some(rnum) = read_rnum(scanner)? {
+        Target::Join(rnum)
+    } else if bond_kind == BondKind::Elided {
+        return Ok(None)
+    } else {
+        return Err(missing_character(scanner))
+    };
+
+    Ok(Some(Link::Bond {
+        kind: bond_kind,
+        target: target
+    }))
 }
 
 #[cfg(test)]
@@ -205,7 +244,17 @@ mod tests {
 
     #[test]
     fn branch_invalid() {
-        assert_eq!(read("C(?)C"), Err(Error::InvalidCharacter(2)));
+        assert_eq!(read("C(?)C"), Err(Error::InvalidCharacter(2)))
+    }
+
+    #[test]
+    fn branch_rnum() {
+        assert_eq!(read("C(1)C"), Err(Error::InvalidCharacter(2)))
+    }
+
+    #[test]
+    fn branch_bond_rnum() {
+        assert_eq!(read("C(-1)C"), Err(Error::InvalidCharacter(3)))
     }
 
     #[test]
@@ -251,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn atom_rnum() {
+    fn atom_rnum_implicit() {
         assert_eq!(read("C1"), Ok(Reading {
             root: Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
@@ -262,64 +311,12 @@ mod tests {
     }
 
     #[test]
-    fn atom_rnum_branch() {
-        assert_eq!(read("C(1)"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![
-                    Link::elided_join(1)
-                ]
-            },
-            trace: vec![ 0 ]
-        }))
-    }
-
-    #[test]
-    fn ethane_bracket() {
-        assert_eq!(read("C[CH4]"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![ 
-                    Link::Bond {
-                        kind: BondKind::Elided,
-                        target: Target::Atom(Atom {
-                            kind: AtomKind::Bracket {
-                                isotope: None,
-                                symbol: BracketSymbol::Element(Element::C),
-                                parity: None,
-                                hcount: Some(4),
-                                charge: None,
-                                map: None
-                            },
-                            links: vec![ ]
-                        })
-                    }
-                ]
-            },
-            trace: vec![ 0, 1 ]
-        }))
-    }
-
-    #[test]
-    fn implicit_single() {
+    fn implicit_bond() {
         assert_eq!(read(&"CO"), Ok(Reading {
             root: Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
                 links: vec![
                     Link::elided_atom(AtomKind::Aliphatic(Aliphatic::O))
-                ]
-            },
-            trace: vec![ 0, 1 ]
-        }))
-    }
-
-    #[test]
-    fn implicit_aromatic() {
-        assert_eq!(read(&"cn"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aromatic(Aromatic::C),
-                links: vec![
-                    Link::elided_atom(AtomKind::Aromatic(Aromatic::N))
                 ]
             },
             trace: vec![ 0, 1 ]
@@ -353,7 +350,59 @@ mod tests {
     }
 
     #[test]
-    fn branch_singleton() {
+    fn ethane_bracket() {
+        assert_eq!(read("C[CH4]"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aliphatic(Aliphatic::C),
+                links: vec![ 
+                    Link::Bond {
+                        kind: BondKind::Elided,
+                        target: Target::Atom(Atom {
+                            kind: AtomKind::Bracket {
+                                isotope: None,
+                                symbol: BracketSymbol::Element(Element::C),
+                                parity: None,
+                                hcount: Some(4),
+                                charge: None,
+                                map: None
+                            },
+                            links: vec![ ]
+                        })
+                    }
+                ]
+            },
+            trace: vec![ 0, 1 ]
+        }))
+    }
+
+    #[test]
+    fn implicit_aromatic() {
+        assert_eq!(read(&"cn"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aromatic(Aromatic::C),
+                links: vec![
+                    Link::elided_atom(AtomKind::Aromatic(Aromatic::N))
+                ]
+            },
+            trace: vec![ 0, 1 ]
+        }))
+    }
+
+    #[test]
+    fn split() {
+        assert_eq!(read(&"C.O"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aliphatic(Aliphatic::C),
+                links: vec![
+                    Link::Split(Atom::aliphatic(Aliphatic::O))
+                ]
+            },
+            trace: vec![ 0, 2 ]
+        }))
+    }
+
+    #[test]
+    fn branch_singleton_elided() {
         assert_eq!(read("C(O)N"), Ok(Reading {
             root: Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
@@ -363,6 +412,74 @@ mod tests {
                 ]
             },
             trace: vec![ 0, 2, 4 ]
+        }))
+    }
+
+    #[test]
+    fn branch_singleton_double() {
+        assert_eq!(read("C(=O)N"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aliphatic(Aliphatic::C),
+                links: vec![
+                    Link::Bond {
+                        kind: BondKind::Double,
+                        target: Target::Atom(Atom::aliphatic(Aliphatic::O))
+                    },
+                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
+                ]
+            },
+            trace: vec![ 0, 3, 5 ]
+        }))
+    }
+
+    #[test]
+    fn branch_chain_single() {
+        assert_eq!(read("C(-OC)N"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aliphatic(Aliphatic::C),
+                links: vec![
+                    Link::Bond {
+                        kind: BondKind::Single,
+                        target: Target::Atom(Atom {
+                            kind: AtomKind::Aliphatic(Aliphatic::O),
+                            links: vec![
+                                Link::elided_atom(
+                                    AtomKind::Aliphatic(Aliphatic::C)
+                                )
+                            ]
+                        })
+                    },
+                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
+                ]
+            },
+            trace: vec![ 0, 3, 4, 6 ]
+        }))
+    }
+
+    #[test]
+    fn branch_branch_single() {
+        assert_eq!(read("C(-N(-F)Cl)Br"), Ok(Reading {
+            root: Atom {
+                kind: AtomKind::Aliphatic(Aliphatic::C),
+                links: vec![
+                    Link::Bond {
+                        kind: BondKind::Single,
+                        target: Target::Atom(Atom {
+                            kind: AtomKind::Aliphatic(Aliphatic::N),
+                            links: vec![
+                                Link::single_atom(
+                                    AtomKind::Aliphatic(Aliphatic::F)
+                                ),
+                                Link::elided_atom(
+                                    AtomKind::Aliphatic(Aliphatic::Cl)
+                                )
+                            ]
+                        })
+                    },
+                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::Br))
+                ]
+            },
+            trace: vec![ 0, 3, 6, 8, 11 ]
         }))
     }
 
@@ -377,44 +494,6 @@ mod tests {
                 ]
             },
             trace: vec![ 0, 3, 5 ]
-        }))
-    }
-
-    #[test]
-    fn branch_singleton_bond() {
-        assert_eq!(read("C(-O)N"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![
-                    Link::single_atom(AtomKind::Aliphatic(Aliphatic::O)),
-                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
-                ]
-            },
-            trace: vec![ 0, 3, 5 ]
-        }))
-    }
-
-    #[test]
-    fn branch_chain() {
-        assert_eq!(read("C(OC)N"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![
-                    Link::Bond {
-                        kind: BondKind::Elided,
-                        target: Target::Atom(Atom {
-                            kind: AtomKind::Aliphatic(Aliphatic::O),
-                            links: vec![
-                                Link::elided_atom(
-                                    AtomKind::Aliphatic(Aliphatic::C)
-                                )
-                            ]
-                        })
-                    },
-                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
-                ]
-            },
-            trace: vec![ 0, 2, 3, 5 ]
         }))
     }
 
@@ -447,33 +526,6 @@ mod tests {
                 ]
             },
             trace: vec![ 0, 4 ]
-        }))
-    }
-
-    #[test]
-    fn cut_digit_parens_digit_chain() {
-        assert_eq!(read("C(1)N"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![
-                    Link::elided_join(1),
-                    Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
-                ]
-            },
-            trace: vec![ 0, 4 ]
-        }))
-    }
-
-    #[test]
-    fn split() {
-        assert_eq!(read("C.O"), Ok(Reading {
-            root: Atom {
-                kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![
-                    Link::Split(Atom::aliphatic(Aliphatic::O))
-                ]
-            },
-            trace: vec![ 0, 2 ]
         }))
     }
 }
