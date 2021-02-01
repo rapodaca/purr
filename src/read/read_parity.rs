@@ -35,7 +35,19 @@ pub fn read_parity(scanner: &mut Scanner) -> Result<Option<Parity>, Error> {
                         },
                         _ => return Err(missing_character(scanner))
                     }
-                }
+                },
+                Some('S') => {
+                    scanner.pop();
+
+                    match scanner.peek() {
+                        Some('P') => {
+                            scanner.pop();
+
+                            square_planar(scanner)?
+                        },
+                        _ => return Err(missing_character(scanner))
+                    }
+                },
                 Some('T') => {
                     scanner.pop();
 
@@ -52,7 +64,7 @@ pub fn read_parity(scanner: &mut Scanner) -> Result<Option<Parity>, Error> {
                         },
                         _ => return Err(missing_character(scanner))
                     }
-                }
+                },
                 _ => Parity::Counterclockwise
             }
         },
@@ -61,35 +73,56 @@ pub fn read_parity(scanner: &mut Scanner) -> Result<Option<Parity>, Error> {
 }
 
 fn tetrahedral(scanner: &mut Scanner) -> Result<Parity, Error> {
-    match scanner.peek() {
+    Ok(match scanner.peek() {
         Some('1') => {
             scanner.pop();
 
-            Ok(Parity::TH1)
+            Parity::TH1
         },
         Some('2') => {
             scanner.pop();
 
-            Ok(Parity::TH2)
+            Parity::TH2
         },
-        _ => Err(missing_character(scanner))
-    }
+        _ => return Err(missing_character(scanner))
+    })
 }
 
 fn allene(scanner: &mut Scanner) -> Result<Parity, Error> {
-    match scanner.peek() {
+    Ok(match scanner.peek() {
         Some('1') => {
             scanner.pop();
 
-            Ok(Parity::AL1)
+            Parity::AL1
         },
         Some('2') => {
             scanner.pop();
 
-            Ok(Parity::AL2)
+            Parity::AL2
         },
-        _ => Err(missing_character(scanner))
-    }
+        _ => return Err(missing_character(scanner))
+    })
+}
+
+fn square_planar(scanner: &mut Scanner) -> Result<Parity, Error> {
+    Ok(match scanner.peek() {
+        Some('1') => {
+            scanner.pop();
+
+            Parity::SP1
+        },
+        Some('2') => {
+            scanner.pop();
+
+            Parity::SP2
+        },
+        Some('3') => {
+            scanner.pop();
+
+            Parity::SP3
+        }
+        _ => return Err(missing_character(scanner))
+    })
 }
 
 fn trigonal_bipyramidal(scanner: &mut Scanner) -> Result<Parity, Error> {
@@ -317,5 +350,19 @@ mod tests {
         let mut scanner = Scanner::new("@OH30");
 
         assert_eq!(read_parity(&mut scanner), Ok(Some(Parity::OH30)))
+    }
+
+    #[test]
+    fn sp_1() {
+        let mut scanner = Scanner::new("@SP1");
+
+        assert_eq!(read_parity(&mut scanner), Ok(Some(Parity::SP1)))
+    }
+
+    #[test]
+    fn sp_3() {
+        let mut scanner = Scanner::new("@SP3");
+
+        assert_eq!(read_parity(&mut scanner), Ok(Some(Parity::SP3)))
     }
 }

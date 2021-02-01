@@ -224,8 +224,64 @@ fn write_parity(parity: &Option<Parity>, out: &mut String) {
     match parity {
         Some(Parity::Clockwise) => out.push_str("@@"),
         Some(Parity::Counterclockwise) => out.push('@'),
+        Some(Parity::TH1) => out.push_str("@TH1"),
+        Some(Parity::TH2) => out.push_str("@TH2"),
+        Some(Parity::AL1) => out.push_str("@AL1"),
+        Some(Parity::AL2) => out.push_str("@AL2"),
+        Some(Parity::TB1) => out.push_str("@TB1"),
+        Some(Parity::TB2) => out.push_str("@TB2"),
+        Some(Parity::TB3) => out.push_str("@TB3"),
+        Some(Parity::TB4) => out.push_str("@TB4"),
+        Some(Parity::TB5) => out.push_str("@TB5"),
+        Some(Parity::TB6) => out.push_str("@TB6"),
+        Some(Parity::TB7) => out.push_str("@TB7"),
+        Some(Parity::TB8) => out.push_str("@TB8"),
+        Some(Parity::TB9) => out.push_str("@TB9"),
+        Some(Parity::TB10) => out.push_str("@TB10"),
+        Some(Parity::TB11) => out.push_str("@TB11"),
+        Some(Parity::TB12) => out.push_str("@TB12"),
+        Some(Parity::TB13) => out.push_str("@TB13"),
+        Some(Parity::TB14) => out.push_str("@TB14"),
+        Some(Parity::TB15) => out.push_str("@TB15"),
+        Some(Parity::TB16) => out.push_str("@TB16"),
+        Some(Parity::TB17) => out.push_str("@TB17"),
+        Some(Parity::TB18) => out.push_str("@TB18"),
+        Some(Parity::TB19) => out.push_str("@TB19"),
+        Some(Parity::TB20) => out.push_str("@TH1"),
+        Some(Parity::OH1) => out.push_str("@OH1"),
+        Some(Parity::OH2) => out.push_str("@OH2"),
+        Some(Parity::OH3) => out.push_str("@TH1"),
+        Some(Parity::OH4) => out.push_str("@OH4"),
+        Some(Parity::OH5) => out.push_str("@OH5"),
+        Some(Parity::OH6) => out.push_str("@OH6"),
+        Some(Parity::OH7) => out.push_str("@OH7"),
+        Some(Parity::OH8) => out.push_str("@OH8"),
+        Some(Parity::OH9) => out.push_str("@OH9"),
+        Some(Parity::OH10) => out.push_str("@OH10"),
+        Some(Parity::OH11) => out.push_str("@OH11"),
+        Some(Parity::OH12) => out.push_str("@OH12"),
+        Some(Parity::OH13) => out.push_str("@OH13"),
+        Some(Parity::OH14) => out.push_str("@OH6"),
+        Some(Parity::OH15) => out.push_str("@OH15"),
+        Some(Parity::OH16) => out.push_str("@OH16"),
+        Some(Parity::OH17) => out.push_str("@OH17"),
+        Some(Parity::OH18) => out.push_str("@OH18"),
+        Some(Parity::OH19) => out.push_str("@OH19"),
+        Some(Parity::OH20) => out.push_str("@OH20"),
+        Some(Parity::OH21) => out.push_str("@OH21"),
+        Some(Parity::OH22) => out.push_str("@OH22"),
+        Some(Parity::OH23) => out.push_str("@OH23"),
+        Some(Parity::OH24) => out.push_str("@OH24"),
+        Some(Parity::OH25) => out.push_str("@OH25"),
+        Some(Parity::OH26) => out.push_str("@OH26"),
+        Some(Parity::OH27) => out.push_str("@OH27"),
+        Some(Parity::OH28) => out.push_str("@OH28"),
+        Some(Parity::OH29) => out.push_str("@OH29"),
+        Some(Parity::OH30) => out.push_str("@OH30"),
+        Some(Parity::SP1) => out.push_str("@SP1"),
+        Some(Parity::SP2) => out.push_str("@SP2"),
+        Some(Parity::SP3) => out.push_str("@SP3"),
         None => (),
-        _ => unimplemented!()
     }
 }
 
@@ -403,6 +459,23 @@ mod tests {
         write_atom_kind(&kind, &mut out);
 
         assert_eq!(out, "[*@]")
+    }
+
+    #[test]
+    fn parity_tetrahedral() {
+        let kind = AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            parity: Some(Parity::TH1),
+            hcount: None,
+            charge: None,
+            map: None
+        };
+        let mut out = String::new();
+
+        write_atom_kind(&kind, &mut out);
+
+        assert_eq!(out, "[*@TH1]")
     }
 
     #[test]
