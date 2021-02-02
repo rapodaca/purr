@@ -1,6 +1,10 @@
 use crate::parts::{ Aliphatic, Aromatic };
 use crate::tree::{ Atom };
-use super::{ Scanner, Error, missing_character };
+use super::{
+    scanner::Scanner,
+    Error,
+    missing_character::missing_character
+};
 
 pub fn read_organic(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
      match scanner.peek() {

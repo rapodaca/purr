@@ -1,6 +1,7 @@
 use crate::parts::{ AtomKind };
 use super::Bond;
 
+/// Atom used in graph-like (adjacency) SMILES representation.
 #[derive(Debug,PartialEq)]
 pub struct Atom {
     pub kind: AtomKind,
@@ -8,6 +9,7 @@ pub struct Atom {
 }
 
 impl Atom {
+    /// Consutrcts an Atom without bonds.
     pub fn new(kind: AtomKind) -> Self {
         Self {
             kind,
@@ -15,10 +17,15 @@ impl Atom {
         }
     }
 
+    /// Returns true if the atom was encoded as aromatic.
     pub fn is_aromatic(&self) -> bool {
         self.kind.is_aromatic()
     }
 
+    /// Computes and returns the subvalence associated with this Atom.
+    /// Subvalence represents the maximum number of [implicit hydrogens](https://depth-first.com/articles/2020/06/08/hydrogen-suppression-in-smiles/)
+    /// that can be added to this Atom without exceeding a valence target.
+    /// This value is independent of an atom's aromaticity marking.
     pub fn subvalence(&self) -> u8 {
         let hcount = match &self.kind {
             AtomKind::Bracket { hcount, .. } =>

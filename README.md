@@ -21,12 +21,12 @@ purr = "0.7"
 Parse ethanol into an abstract syntax tree:
 
 ```rust
-use purr::{ read_smiles, Reading, ReadError };
-use purr::parts::{ AtomKind, Aliphatic, BondKind, Element, BracketSymbol };
+use purr::read::{ read, Reading, Error };
 use purr::tree::{ Atom, Link, Target };
+use purr::parts::{ AtomKind, Aliphatic, BondKind, Element, BracketSymbol };
 
-fn main() -> Result<(), ReadError> {
-    let Reading { root, trace } = read_smiles("OC[CH3]")?;
+fn main() -> Result<(), Error> {
+    let Reading { root, trace } = read("OC[CH3]")?;
 
     assert_eq!(root, Atom {
         kind: AtomKind::Aliphatic(Aliphatic::O),
@@ -63,25 +63,25 @@ fn main() -> Result<(), ReadError> {
 It's often helpful to represent a tree as a string for visual inspection.
 
 ```rust
-    use purr::{ read_smiles, ReadError };
-    use purr::write::write;
+use purr::read::{ read, Error };
+use purr::write::write;
 
-    fn main() -> Result<(), ReadError> {
-        let root = read_smiles("c1ccccc1")?.root;
+fn main() -> Result<(), Error> {
+    let root = read("c1ccccc1")?.root;
 
-        assert_eq!(write(&root), "c1ccccc1");
+    assert_eq!(write(&root), "c1ccccc1");
 
-        Ok(())
-    }
+    Ok(())
+}
 ```
 
 The `trace` value maps each `Atom` index to a cursor position in the original string. This is useful when conveying semantic errors such as hypervalence. 
 
 ```rust
-use purr::{ read_smiles, ReadError };
+use purr::read::{ read, Error };
 
-fn main() -> Result<(), ReadError> {
-    let trace = read_smiles("C=C(C)(C)C")?.trace;
+fn main() -> Result<(), Error> {
+    let trace = read("C=C(C)(C)C")?.trace;
 
     assert_eq!(trace, vec![ 0, 2, 4, 7, 9 ]);
 
@@ -95,26 +95,27 @@ fn main() -> Result<(), ReadError> {
 Syntax errors are mapped to the character index.
 
 ```rust
-use purr::{ read_smiles, ReadError };
+use purr::read::{ read, Error };
 
 fn main() {
-    assert_eq!(read_smiles("OCCXC"), Err(ReadError::InvalidCharacter(3)));
+    assert_eq!(read("OCCXC"), Err(Error::InvalidCharacter(3)));
 }
 ```
 
-Sometimes it's more convenient to work with an adjacency (or graph-like) representation. This can be accomplished through the `graph::from_tree` method.
+Sometimes it's more convenient to work with an adjacency (or graph-like) representation. This can be accomplished through the `graph_from_tree` method.
 
 ```rust
-use purr::{ read_smiles, ReadError };
-use purr::parts::{ AtomKind, BondKind };
+use purr::read::{ read, Error };
 use purr::graph::{ Atom, Bond, from_tree };
+use purr::parts::{ AtomKind, Aliphatic, BondKind };
 
-fn main() -> Result<(), ReadError> {
-    let root = read_smiles("*=*")?.root;
-
-    assert_eq!(from_tree(root).expect("semantic error"), vec![
+fn main() -> Result<(), Error> {
+    let root = read("C=*")?.root;
+    let graph = from_tree(root).expect("semantic error");
+ 
+    assert_eq!(graph, vec![
         Atom {
-            kind: AtomKind::Star,
+            kind: AtomKind::Aliphatic(Aliphatic::C),
             bonds: vec![
                 Bond::new(BondKind::Double, 1)
             ]
@@ -125,8 +126,11 @@ fn main() -> Result<(), ReadError> {
                 Bond::new(BondKind::Double, 0)
             ]
         }
-    ]);
+     ]);
 
+    assert_eq!(graph[0].is_aromatic(), false);
+    assert_eq!(graph[0].subvalence(), 2);
+ 
     Ok(())
 }
 ```

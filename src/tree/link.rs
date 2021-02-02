@@ -1,6 +1,7 @@
 use crate::parts::{ AtomKind, BondKind };
 use super::{ Target, Atom };
 
+/// A half-bond capturing the kind of bond and its target.
 #[derive(Debug,PartialEq)]
 pub enum Link {
     Bond {

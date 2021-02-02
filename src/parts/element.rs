@@ -1,3 +1,4 @@
+/// Complete and up-to-date set of atomic symbols.
 #[derive(Debug,PartialEq)]
 pub enum Element {
 //  0   1   2   3   4   5   6   7   8   9

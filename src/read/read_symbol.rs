@@ -1,5 +1,5 @@
 use crate::parts::{ Element, BracketSymbol, BracketAromatic };
-use super::{ Scanner, Error, missing_character };
+use super::{ scanner::Scanner, Error, missing_character::missing_character };
 
 pub fn read_symbol(scanner: &mut Scanner) -> Result<BracketSymbol, Error> {
     match scanner.peek() {

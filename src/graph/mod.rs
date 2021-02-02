@@ -8,4 +8,3 @@ pub use error::Error;
 pub use atom::Atom;
 pub use bond::Bond;
 pub use from_tree::from_tree;
-pub use reconcile_bonds::reconcile_bonds;

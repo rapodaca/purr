@@ -1,5 +1,6 @@
 use super::Element;
 
+/// Eligible symbols for aromatic bracket atoms.
 #[derive(Debug,PartialEq)]
 pub enum BracketAromatic {
     B, C, N, O, S, P, Se, As

@@ -1,3 +1,5 @@
+/// A kind of bond. Elided bonds are not present in the corresponding
+/// string representation.
 #[derive(Debug,PartialEq,Clone)]
 pub enum BondKind {
     Elided,
@@ -11,6 +13,8 @@ pub enum BondKind {
 }
 
 impl BondKind {
+    /// Directional bonds (Up and Down) return the complementary item.
+    /// Everything else returns self.
     pub fn reverse(&self) -> Self {
         match self {
             Self::Elided => Self::Elided,
@@ -21,14 +25,6 @@ impl BondKind {
             Self::Aromatic => Self::Aromatic,
             Self::Up => Self::Down,
             Self::Down => Self::Up
-        }
-    }
-
-    pub fn is_directional(&self) -> bool {
-        match self {
-            Self::Up |
-            Self::Down => true,
-            _ => false
         }
     }
 }

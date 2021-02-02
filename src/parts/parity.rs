@@ -1,3 +1,5 @@
+/// Code representing one of several atomic parities. Most applications
+/// will use only `Clockwise` and `Counterclockwise`.
 #[derive(Debug,PartialEq,Clone)]
 pub enum Parity {
     Clockwise,

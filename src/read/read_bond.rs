@@ -1,5 +1,5 @@
 use crate::parts::BondKind;
-use super::Scanner;
+use super::scanner::Scanner;
 
 pub fn read_bond(scanner: &mut Scanner) -> BondKind {
     let result = match scanner.peek() {

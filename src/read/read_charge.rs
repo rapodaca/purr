@@ -1,4 +1,4 @@
-use super::{ Scanner, Error };
+use super::{ scanner::Scanner, Error };
 
 pub fn read_charge(scanner: &mut Scanner) -> Result<Option<i8>, Error> {
     match scanner.peek() {

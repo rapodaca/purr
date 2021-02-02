@@ -1,3 +1,4 @@
+/// Atomic symbols that can be aliphatic.
 #[derive(Debug,PartialEq)]
 pub enum Aliphatic {
     B, C, N, O, S, P, F, Cl, Br, I, At, Ts

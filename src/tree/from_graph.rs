@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{ graph, parts };
-use super::{ Atom, JoinPool, Link, Target };
+use super::{ Atom, join_pool::JoinPool, Link, Target };
 
+/// Returns the root atom in a tree corresponding to the input graph.
 pub fn from_graph(graph: Vec<graph::Atom>) -> Atom {
     let mut atoms = graph.into_iter().enumerate().collect::<HashMap<_,_>>();
     let mut links = Vec::new();

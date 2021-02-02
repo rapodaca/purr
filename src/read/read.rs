@@ -1,21 +1,27 @@
 use crate::tree::{ Atom, Link, Target };
 use crate::parts::{ BondKind };
 use super::{
-    Scanner, Reading, Error, read_organic, read_bracket, read_bond,
-    missing_character, read_rnum
+    scanner::Scanner,
+    Reading,
+    Error,
+    read_organic::read_organic,
+    read_bracket::read_bracket,
+    read_bond::read_bond,
+    missing_character::missing_character,
+    read_rnum::read_rnum
 };
 
-/// Reads a SMILES string, returning a Reading or Error if not successful.
+/// Reads a SMILES string, returning a Reading, or Error if not successful.
 /// Uses the grammar published in [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/).
 /// 
 /// Branches are read in the order they appear in the string.
 /// 
 /// ```
-/// use purr::{ read_smiles, Reading, ReadError };
+/// use purr::read::{ read, Reading, Error };
 /// use purr::parts::{ AtomKind, Aromatic };
 /// 
-/// fn main() -> Result<(), ReadError> {
-///     let Reading { root, trace } = read_smiles("c1ccccc1")?;
+/// fn main() -> Result<(), Error> {
+///     let Reading { root, trace } = read("c1ccccc1")?;
 /// 
 ///     assert_eq!(root.kind, AtomKind::Aromatic(Aromatic::C));
 ///     assert_eq!(trace, vec![ 0, 2, 3, 4, 5, 6 ]);
@@ -25,7 +31,7 @@ use super::{
 /// ```
 /// 
 /// The result type `Reading` is designed to allow semantic errors to be
-/// repoted in terms of a cursor position in the original string. In the
+/// reported in terms of a cursor position in the original string. In the
 /// example above, the second atom cursor position
 /// is accessed with `trace[1]`, which yields the value `2`. Indexing into
 /// the `trace` array is zero-based.

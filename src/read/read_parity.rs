@@ -1,5 +1,9 @@
 use crate::parts::{ Parity };
-use super::{ Scanner, Error, missing_character };
+use super::{
+    scanner::Scanner,
+    Error,
+    missing_character::missing_character
+};
 
 pub fn read_parity(scanner: &mut Scanner) -> Result<Option<Parity>, Error> {
     Ok(Some(match scanner.peek() {

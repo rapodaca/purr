@@ -1,6 +1,12 @@
 use crate::parts::{ AtomKind };
 use crate::tree::{ Atom };
-use super::{ Scanner, read_symbol, read_charge, read_parity, Error };
+use super::{
+    scanner::Scanner,
+    read_symbol::read_symbol,
+    read_charge::read_charge,
+    read_parity::read_parity,
+    Error
+};
 
 pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
     if let Some('[') = scanner.peek() {

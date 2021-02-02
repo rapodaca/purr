@@ -1,5 +1,6 @@
 use super::{ Aliphatic, Aromatic, BracketSymbol, Parity, Element };
 
+/// Minimal context-sensitive representation of an atom kind.
 #[derive(Debug,PartialEq)]
 pub enum AtomKind {
     Star,
@@ -16,6 +17,7 @@ pub enum AtomKind {
 }
 
 impl AtomKind {
+    /// Returns true if the kind was defined as being aromatic.
     pub fn is_aromatic(&self) -> bool {
         match self {
             Self::Star => false,
@@ -29,6 +31,7 @@ impl AtomKind {
         }
     }
 
+    /// Returns the valence targets for this atom kind.
     pub fn targets(&self) -> &[u8] {
         match self {
             Self::Star => &[ ],

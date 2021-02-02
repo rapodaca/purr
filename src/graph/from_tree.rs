@@ -2,8 +2,42 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
 use crate::{ tree, parts };
-use super::{ Atom, Bond, reconcile_bonds, Error };
+use super::{ Atom, Bond, reconcile_bonds::reconcile_bonds, Error };
 
+/// Returns a graph-like (adjacency) representation from the corresponding
+/// tree. This is useful when analysis requires access to local atomic
+/// information.
+/// 
+/// ```
+/// use purr::read::{ read, Error };
+/// use purr::graph::{ Atom, Bond, from_tree };
+/// use purr::parts::{ AtomKind, Aliphatic, BondKind };
+///
+/// fn main() -> Result<(), Error> {
+///     let root = read("C=*")?.root;
+///     let graph = from_tree(root).expect("semantic error");
+/// 
+///     assert_eq!(graph, vec![
+///         Atom {
+///             kind: AtomKind::Aliphatic(Aliphatic::C),
+///             bonds: vec![
+///                 Bond::new(BondKind::Double, 1)
+///             ]
+///         },
+///         Atom {
+///             kind: AtomKind::Star,
+///             bonds: vec![
+///                 Bond::new(BondKind::Double, 0)
+///             ]
+///         }
+///     ]);
+///
+///     assert_eq!(graph[0].is_aromatic(), false);
+///     assert_eq!(graph[0].subvalence(), 2);
+/// 
+///     Ok(())
+/// }
+/// ```
 pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
     let mut stack = Vec::new();
     let mut out = Vec::new();

@@ -6,23 +6,26 @@
 //! - [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
 //! - [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
 
-pub mod tree;
-pub mod graph;
+/// Common components used in `graph` and `tree` representations.
 pub mod parts;
-pub(crate) mod read;
+/// Tree representation of SMILES.
+pub mod tree;
+/// Graph-like (adcacency) representation of SMILES.
+pub mod graph;
+/// Reading SMILES strings.
+pub mod read;
+/// Writing SMILES strings.
 pub mod write;
-
-pub use read::{ read as read_smiles, Reading, Error as ReadError };
 
 // https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790
 #[cfg(doctest)]
 mod test_readme {
-  macro_rules! external_doc_test {
-    ($x:expr) => {
-        #[doc = $x]
-        extern {}
-    };
-  }
+    macro_rules! external_doc_test {
+        ($x:expr) => {
+            #[doc = $x]
+            extern {}
+        };
+    }
 
-  external_doc_test!(include_str!("../README.md"));
+    external_doc_test!(include_str!("../README.md"));
 }

@@ -1,11 +1,13 @@
 use super::Aliphatic;
 
+/// Atomic symbols that can be aromatic.
 #[derive(Debug,PartialEq)]
 pub enum Aromatic {
     B, C, N, O, P, S
 }
 
 impl Aromatic {
+    /// The valence targets available to this aromatic.
     pub fn targets(&self) -> &[u8] {
         match self {
             Self::B => &[ 3 ],
