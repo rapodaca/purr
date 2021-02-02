@@ -194,4 +194,24 @@ mod subvalence {
 
         assert_eq!(atom.subvalence(), 2)
     }
+
+    #[test]
+    fn sulfur_charged_divalent() {
+        let atom = Atom {
+            kind: AtomKind::Bracket {
+                isotope: None,
+                symbol: BracketSymbol::Aromatic(BracketAromatic::S),
+                parity: None,
+                hcount: None,
+                charge: Some(1),
+                map: None
+            },
+            bonds: vec![
+                Bond::new(BondKind::Single, 1),
+                Bond::new(BondKind::Single, 2)
+            ]
+        };
+
+        assert_eq!(atom.subvalence(), 1)
+    }
 }
