@@ -396,6 +396,35 @@ mod tests {
     }
 
     #[test]
+    fn c3_left_up_right_down() {
+        let root = read("*/1**\\1").unwrap().root;
+
+        assert_eq!(from_tree(root), Ok(vec![
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Up, 2),
+                    Bond::new(BondKind::Elided, 1)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 0),
+                    Bond::new(BondKind::Elided, 2)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 1),
+                    Bond::new(BondKind::Down, 0)
+                ]
+            }
+        ]))
+    }
+
+    #[test]
     fn p2_up() {
         let root = read("*/*").unwrap().root;
 

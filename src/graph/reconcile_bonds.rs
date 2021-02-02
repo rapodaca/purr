@@ -9,6 +9,10 @@ pub fn reconcile_bonds(
         } else {
             Some((left, right))
         }
+    } else if left == BondKind::Up && right == BondKind::Down {
+        Some((left, right))
+    } else if left == BondKind::Down && right == BondKind::Up {
+        Some((left, right))
     } else if left == BondKind::Elided {
         match right {
             BondKind::Up => Some((BondKind::Down, right)),
@@ -99,6 +103,22 @@ mod tests {
     fn down_elided() {
         assert_eq!(
             reconcile_bonds(BondKind::Down, BondKind::Elided),
+            Some((BondKind::Down, BondKind::Up))
+        )
+    }
+
+    #[test]
+    fn up_down() {
+        assert_eq!(
+            reconcile_bonds(BondKind::Up, BondKind::Down),
+            Some((BondKind::Up, BondKind::Down))
+        )
+    }
+
+    #[test]
+    fn down_up() {
+        assert_eq!(
+            reconcile_bonds(BondKind::Down, BondKind::Up),
             Some((BondKind::Down, BondKind::Up))
         )
     }
