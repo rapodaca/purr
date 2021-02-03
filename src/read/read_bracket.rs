@@ -100,7 +100,7 @@ fn triple_digits(scanner: &mut Scanner) -> Option<u16> {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use crate::parts::{ BracketSymbol, Parity, BracketAromatic };
+    use crate::parts::{ BracketSymbol, Parity, BracketAromatic, Charge };
     use crate::tree::Atom;
     use super::*;
 
@@ -203,7 +203,7 @@ mod tests {
                 symbol: BracketSymbol::Star,
                 parity: None,
                 hcount: None,
-                charge: Some(1),
+                charge: Some(Charge::One),
                 map: None
             },
             links: vec![ ]
@@ -237,7 +237,7 @@ mod tests {
                 symbol: BracketSymbol::Aromatic(BracketAromatic::S),
                 parity: None,
                 hcount: None,
-                charge: Some(1),
+                charge: Some(Charge::One),
                 map: None
             },
             links: vec![ ]

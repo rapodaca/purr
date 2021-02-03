@@ -1,6 +1,6 @@
 use crate::parts::{
     AtomKind, Aliphatic, Aromatic, BracketSymbol, BracketAromatic, Parity,
-    Element
+    Element, Charge
 };
 
 pub fn write_atom_kind(kind: &AtomKind, out: &mut String) {
@@ -52,7 +52,7 @@ fn write_bracket(
     isotope: &Option<u16>,
     symbol: &BracketSymbol,
     hcount: &Option<u8>,
-    charge: &Option<i8>,
+    charge: &Option<Charge>,
     parity: &Option<Parity>,
     map: &Option<u16>,
     out: &mut String
@@ -297,21 +297,44 @@ fn write_hcount(hcount: &Option<u8>, out: &mut String) {
     }
 }
 
-fn write_charge(charge: &Option<i8>, out: &mut String) {
-    if let Some(charge) = *charge {
-        if charge > 0 {
-            out.push('+');
-
-            if charge > 1 {
-                out.push_str(&charge.to_string())
-            }
-        } else if charge < 0 {
-            if charge == -1 {
-                out.push('-')
-            } else {
-                out.push_str(&charge.to_string())
-            }
-        }
+fn write_charge(charge: &Option<Charge>, out: &mut String) {
+    match charge {
+        Some(charge) => {
+            out.push_str(match charge {
+                Charge::MinusFifteen => "-15",
+                Charge::MinusFourteen => "-14",
+                Charge::MinusThirteen => "-13",
+                Charge::MinusTwelve => "-12",
+                Charge::MinusEleven => "-11",
+                Charge::MinusTen => "-10",
+                Charge::MinusNine => "-9",
+                Charge::MinusEight => "-8",
+                Charge::MinusSeven => "-7",
+                Charge::MinusSix => "-6",
+                Charge::MinusFive => "-5",
+                Charge::MinusFour => "-4",
+                Charge::MinusThree => "-3",
+                Charge::MinusTwo => "-2",
+                Charge::MinusOne => "-",
+                Charge::Zero => "0",
+                Charge::One => "+",
+                Charge::Two => "+2",
+                Charge::Three => "+3",
+                Charge::Four => "+4",
+                Charge::Five =>" +5",
+                Charge::Six => "+6",
+                Charge::Seven => "+7",
+                Charge::Eight =>"+8",
+                Charge::Nine => "+9",
+                Charge::Ten => "+10",
+                Charge::Eleven => "+11",
+                Charge::Twelve => "+12",
+                Charge::Thirteen => "+13",
+                Charge::Fourteen => "+14",
+                Charge::Fifteen => "+15"
+            })
+        },
+        None => ()
     }
 }
 
@@ -536,14 +559,14 @@ mod tests {
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
-            charge: Some(0),
+            charge: Some(Charge::Zero),
             map: None
         };
         let mut out = String::new();
 
         write_atom_kind(&kind, &mut out);
 
-        assert_eq!(out, "[*]")
+        assert_eq!(out, "[*0]")
     }
 
     #[test]
@@ -553,7 +576,7 @@ mod tests {
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
-            charge: Some(1),
+            charge: Some(Charge::One),
             map: None
         };
         let mut out = String::new();
@@ -570,7 +593,7 @@ mod tests {
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
-            charge: Some(2),
+            charge: Some(Charge::Two),
             map: None
         };
         let mut out = String::new();
@@ -587,7 +610,7 @@ mod tests {
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
-            charge: Some(-1),
+            charge: Some(Charge::MinusOne),
             map: None
         };
         let mut out = String::new();
@@ -604,7 +627,7 @@ mod tests {
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
-            charge: Some(-2),
+            charge: Some(Charge::MinusTwo),
             map: None
         };
         let mut out = String::new();
@@ -655,7 +678,7 @@ mod tests {
             symbol: BracketSymbol::Element(Element::C),
             parity: Some(Parity::Clockwise),
             hcount: Some(1),
-            charge: Some(1),
+            charge: Some(Charge::One),
             map: Some(42)
         };
         let mut out = String::new();

@@ -1,19 +1,22 @@
+use std::convert::TryInto;
+
+use crate::parts::Charge;
 use super::{ scanner::Scanner, Error };
 
-pub fn read_charge(scanner: &mut Scanner) -> Result<Option<i8>, Error> {
+pub fn read_charge(scanner: &mut Scanner) -> Result<Option<Charge>, Error> {
     match scanner.peek() {
         Some('+') => {
             scanner.pop();
 
             match fifteen(scanner) {
-                Some(value) => Ok(Some(value)),
+                Some(value) => Ok(Some(value.try_into().expect("charge"))),
                 None => match scanner.peek() {
                     Some('+') => {
                         scanner.pop();
 
-                        Ok(Some(2))
+                        Ok(Some(Charge::Two))
                     },
-                    _ => Ok(Some(1))
+                    _ => Ok(Some(Charge::One))
                 }
             }
         },
@@ -21,14 +24,14 @@ pub fn read_charge(scanner: &mut Scanner) -> Result<Option<i8>, Error> {
             scanner.pop();
 
             match fifteen(scanner) {
-                Some(value) => Ok(Some(-value)),
+                Some(value) => Ok(Some((-value).try_into().expect("charge"))),
                 None => match scanner.peek() {
                     Some('-') => {
                         scanner.pop();
 
-                        Ok(Some(-2))
+                        Ok(Some(Charge::MinusTwo))
                     }
-                    _ => Ok(Some(-1))
+                    _ => Ok(Some(Charge::MinusOne))
                 }
             }
         },
@@ -80,55 +83,55 @@ mod tests {
     fn minus_x() {
         let mut scanner = Scanner::new("-X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(-1)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::MinusOne)))
     }
 
     #[test]
     fn minus_2_x() {
         let mut scanner = Scanner::new("-1X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(-1)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::MinusOne)))
     }
 
     #[test]
     fn minus_minus_x() {
         let mut scanner = Scanner::new("--X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(-2)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::MinusTwo)))
     }
 
     #[test]
     fn minus_15_x() {
         let mut scanner = Scanner::new("-15X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(-15)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::MinusFifteen)))
     }
 
     #[test]
     fn plus_x() {
         let mut scanner = Scanner::new("+X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(1)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::One)))
     }
 
     #[test]
     fn plus_plus_x() {
         let mut scanner = Scanner::new("++X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(2)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::Two)))
     }
 
     #[test]
     fn plus_2_x() {
         let mut scanner = Scanner::new("+2X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(2)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::Two)))
     }
 
     #[test]
     fn plus_15_x() {
         let mut scanner = Scanner::new("+15X");
 
-        assert_eq!(read_charge(&mut scanner), Ok(Some(15)))
+        assert_eq!(read_charge(&mut scanner), Ok(Some(Charge::Fifteen)))
     }
 }

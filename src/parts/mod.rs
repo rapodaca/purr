@@ -6,6 +6,7 @@ mod bracket_aromatic;
 mod bracket_symbol;
 mod element;
 mod parity;
+mod charge;
 
 pub use aliphatic::Aliphatic;
 pub use aromatic::Aromatic;
@@ -15,3 +16,4 @@ pub use bracket_aromatic::BracketAromatic;
 pub use bracket_symbol::BracketSymbol;
 pub use element::Element;
 pub use parity::Parity;
+pub use charge::Charge;

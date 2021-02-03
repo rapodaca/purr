@@ -50,7 +50,8 @@ impl Atom {
 #[cfg(test)]
 mod subvalence {
     use crate::parts::{
-        BondKind, BracketSymbol, Element, BracketAromatic, Aliphatic, Aromatic
+        BondKind, BracketSymbol, Element, BracketAromatic, Aliphatic, Aromatic,
+        Charge
     };
     use super::*;
 
@@ -203,7 +204,7 @@ mod subvalence {
                 symbol: BracketSymbol::Aromatic(BracketAromatic::S),
                 parity: None,
                 hcount: None,
-                charge: Some(1),
+                charge: Some(Charge::One),
                 map: None
             },
             bonds: vec![

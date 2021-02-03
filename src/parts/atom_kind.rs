@@ -1,4 +1,4 @@
-use super::{ Aliphatic, Aromatic, BracketSymbol, Parity, Element };
+use super::{ Aliphatic, Aromatic, BracketSymbol, Parity, Element, Charge };
 
 /// Minimal context-sensitive representation of an atom kind.
 #[derive(Debug,PartialEq)]
@@ -11,7 +11,7 @@ pub enum AtomKind {
         symbol: BracketSymbol,
         parity: Option<Parity>,
         hcount: Option<u8>,
-        charge: Option<i8>,
+        charge: Option<Charge>,
         map: Option<u16>
     }
 }
@@ -48,48 +48,48 @@ impl AtomKind {
     }
 }
 
-fn elemental_targets(element: &Element, charge: &Option<i8>) -> &'static [u8] {
+fn elemental_targets(element: &Element, charge: &Option<Charge>) -> &'static [u8] {
     match element {
         Element::B => match charge {
-            Some(-3) => &OXYGEN_TARGET,
-            Some(-2) => &NITROGEN_TARGET,
-            Some(-1) => &CARBON_TARGET,
-            Some(0) |
+            Some(Charge::MinusThree) => &OXYGEN_TARGET,
+            Some(Charge::MinusTwo) => &NITROGEN_TARGET,
+            Some(Charge::MinusOne) => &CARBON_TARGET,
+            Some(Charge::Zero) |
             None => &BORON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::C => match charge {
-            Some(-2) => &OXYGEN_TARGET,
-            Some(-1) => &NITROGEN_TARGET,
-            Some(0) |
-            Some(1) => &BORON_TARGET,
+            Some(Charge::MinusTwo) => &OXYGEN_TARGET,
+            Some(Charge::MinusOne) => &NITROGEN_TARGET,
+            Some(Charge::Zero) |
+            Some(Charge::One) => &BORON_TARGET,
             None => &CARBON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::N => match charge {
-            Some(0) |
+            Some(Charge::Zero) |
             None => &NITROGEN_TARGET,
-            Some(1) => &CARBON_TARGET,
+            Some(Charge::One) => &CARBON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::O => match charge {
-            Some(0) |
+            Some(Charge::Zero) |
             None => &OXYGEN_TARGET,
-            Some(1) => &NITROGEN_TARGET,
+            Some(Charge::One) => &NITROGEN_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::P |
         Element::As => match charge {
-            Some(-1) => &SULFUR_TARGET,
-            Some(0) |
+            Some(Charge::MinusOne) => &SULFUR_TARGET,
+            Some(Charge::Zero) |
             None => &PHOSPHOROUS_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::S |
         Element::Se => match charge {
-            Some(0) |
+            Some(Charge::Zero) |
             None => &SULFUR_TARGET,
-            Some(1) => &PHOSPHOROUS_TARGET,
+            Some(Charge::One) => &PHOSPHOROUS_TARGET,
             _ => &EMPTY_TARGET
         }
         _ => &EMPTY_TARGET
