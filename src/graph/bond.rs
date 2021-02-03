@@ -35,4 +35,9 @@ impl Bond {
     pub fn is_aromatic(&self) -> bool {
         self.kind == BondKind::Aromatic
     }
+
+    /// Returns true if this bond is Up or Down
+    pub fn is_directional(&self) -> bool {
+        self.kind == BondKind::Up || self.kind == BondKind::Down
+    }
 }
