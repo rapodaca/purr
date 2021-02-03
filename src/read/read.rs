@@ -201,6 +201,7 @@ fn read_union(
 mod tests {
     use pretty_assertions::assert_eq;
     use crate::parts::{ Element, AtomKind, Aliphatic, BracketSymbol, Aromatic };
+    use crate::tree::{ Rnum };
     use super::*;
 
     #[test]
@@ -310,7 +311,7 @@ mod tests {
         assert_eq!(read("C1"), Ok(Reading {
             root: Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
-                links: vec![ Link::elided_join(1) ]
+                links: vec![ Link::elided_join(Rnum::R1) ]
             },
             trace: vec![ 0 ]
         }))
@@ -511,7 +512,7 @@ mod tests {
                 links: vec![
                     Link::Bond {
                         kind: BondKind::Elided,
-                        target: Target::Join(1)
+                        target: Target::Join(Rnum::R1)
                     },
                     Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
                 ]
@@ -526,8 +527,8 @@ mod tests {
             root: Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
                 links: vec![
-                    Link::elided_join(1),
-                    Link::single_join(2),
+                    Link::elided_join(Rnum::R1),
+                    Link::single_join(Rnum::R2),
                     Link::elided_atom(AtomKind::Aliphatic(Aliphatic::N))
                 ]
             },

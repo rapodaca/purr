@@ -41,7 +41,7 @@ use super::{ Atom, Bond, reconcile_bonds::reconcile_bonds, Error };
 pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
     let mut stack = Vec::new();
     let mut out = Vec::new();
-    let mut opens: HashMap<u16, Open> = HashMap::new();
+    let mut opens: HashMap<tree::Rnum, Open> = HashMap::new();
 
     out.push(Atom::new(root.kind));
 
@@ -59,7 +59,7 @@ pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
 fn add_link(
     sid: usize,
     link: tree::Link,
-    opens: &mut HashMap<u16, Open>,
+    opens: &mut HashMap<tree::Rnum, Open>,
     stack: &mut Vec<(usize, tree::Link)>,
     out: &mut Vec<Atom>
 ) -> Result<(), Error> {
@@ -139,8 +139,8 @@ fn extend(
 fn join(
     sid: usize,
     bond_kind: parts::BondKind,
-    rnum: u16,
-    opens: &mut HashMap<u16, Open>,
+    rnum: tree::Rnum,
+    opens: &mut HashMap<tree::Rnum, Open>,
     out: &mut Vec<Atom>
 ) -> Result<(), Error> {
     match opens.entry(rnum) {

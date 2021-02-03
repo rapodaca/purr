@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{ graph, parts };
-use super::{ Atom, join_pool::JoinPool, Link, Target };
+use super::{ Atom, join_pool::JoinPool, Link, Target, Rnum };
 
 /// Returns the root atom in a tree corresponding to the input graph.
 pub fn from_graph(graph: Vec<graph::Atom>) -> Atom {
@@ -108,7 +108,7 @@ enum Unit {
     },
     Join {
         sid: usize,
-        rnum: u16,
+        rnum: Rnum,
         kind: parts::BondKind
     },
     Split {
@@ -122,7 +122,7 @@ impl Unit {
         Self::Bond { sid, kind, tid }
     }
 
-    fn join(sid: usize, kind: parts::BondKind, rnum: u16) -> Self {
+    fn join(sid: usize, kind: parts::BondKind, rnum: Rnum) -> Self {
         Self::Join { sid, kind, rnum }
     }
 

@@ -2,17 +2,20 @@ use std::collections::{ HashMap, BinaryHeap };
 use std::collections::hash_map::Entry;
 use std::cmp::{ Ord, Ordering };
 use std::hash::{ Hash, Hasher };
+use std::convert::TryInto;
+
+use super::Rnum;
 
 #[derive(Eq,PartialEq,PartialOrd)]
-struct Rnum(u16);
+struct Index(u16);
 
 #[derive(Debug,PartialEq)]
 pub struct Hit {
-    pub rnum: u16,
+    pub rnum: Rnum,
     pub closes: bool
 }
 
-impl Ord for Rnum {
+impl Ord for Index {
     fn cmp(&self, other: &Self) -> Ordering {
         self.0.cmp(&other.0).reverse()
     }
@@ -37,7 +40,7 @@ impl Hash for Pair {
 pub struct JoinPool {
     counter: u16,
     borrowed: HashMap<Pair, u16>,
-    replaced: BinaryHeap<Rnum>
+    replaced: BinaryHeap<Index>
 }
 
 impl JoinPool {
@@ -64,14 +67,14 @@ impl JoinPool {
             Entry::Occupied(occupied) => {
                 let result = occupied.remove();
 
-                self.replaced.push(Rnum(result));
+                self.replaced.push(Index(result));
 
-                Hit { rnum: result, closes: true }
+                Hit { rnum: result.try_into().expect("rnum"), closes: true }
             },
             Entry::Vacant(vacant) => {
                 vacant.insert(next);
 
-                Hit { rnum: next, closes: false }
+                Hit { rnum: next.try_into().expect("rnum"), closes: false }
             }
         }
     }
@@ -101,15 +104,15 @@ mod hit {
         let mut pool = JoinPool::new();
 
         assert_eq!(pool.hit(1, 2), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         });
         assert_eq!(pool.hit(1, 5), Hit {
-            rnum: 2,
+            rnum: Rnum::R2,
             closes: false
         });
         assert_eq!(pool.hit(13, 42), Hit {
-            rnum: 3,
+            rnum: Rnum::R3,
             closes: false
         })
     }
@@ -119,11 +122,11 @@ mod hit {
         let mut pool = JoinPool::new();
 
         assert_eq!(pool.hit(0, 1), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         });
         assert_eq!(pool.hit(1, 0), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: true
         })
     }
@@ -133,15 +136,15 @@ mod hit {
         let mut pool = JoinPool::new();
 
         assert_eq!(pool.hit(0, 1), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         });
         assert_eq!(pool.hit(1, 0), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: true
         });
         assert_eq!(pool.hit(13, 42), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         })
     }
@@ -151,28 +154,28 @@ mod hit {
         let mut pool = JoinPool::new();
 
         assert_eq!(pool.hit(0, 1), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         });
         assert_eq!(pool.hit(1, 3), Hit {
-            rnum: 2,
+            rnum: Rnum::R2,
             closes: false
         });
         assert_eq!(pool.hit(2, 4), Hit {
-            rnum: 3,
+            rnum: Rnum::R3,
             closes: false
         });
         assert_eq!(pool.hit(3, 1), Hit {
-            rnum: 2,
+            rnum: Rnum::R2,
             closes: true
         });
         assert_eq!(pool.hit(1, 0), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: true
         });
 
         assert_eq!(pool.hit(3, 5), Hit {
-            rnum: 1,
+            rnum: Rnum::R1,
             closes: false
         })
     }

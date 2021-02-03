@@ -1,5 +1,5 @@
 use crate::parts::{ AtomKind, BondKind };
-use super::{ Target, Atom };
+use super::{ Target, Atom, Rnum };
 
 /// A half-bond capturing the kind of bond and its target.
 #[derive(Debug,PartialEq)]
@@ -12,14 +12,14 @@ pub enum Link {
 }
 
 impl Link {
-    pub fn elided_join(rnum: u16) -> Self {
+    pub fn elided_join(rnum: Rnum) -> Self {
         Link::Bond {
             kind: BondKind::Elided,
             target: Target::Join(rnum)
         }
     }
 
-    pub fn single_join(rnum: u16) -> Self {
+    pub fn single_join(rnum: Rnum) -> Self {
         Link::Bond {
             kind: BondKind::Single,
             target: Target::Join(rnum)

@@ -1,6 +1,7 @@
 use crate::tree::{ Atom, Link, Target };
 use super::{
-    write_atom_kind::write_atom_kind, write_bond_kind::write_bond_kind
+    write_atom_kind::write_atom_kind, write_bond_kind::write_bond_kind,
+    write_rnum::write_rnum
 };
 
 /// Returns a String representing the given tree. Performs a depth-first
@@ -44,7 +45,8 @@ pub fn write(root: &Atom) -> String {
                         tail(branch, target, &mut out, &mut stack)
                     },
                     Target::Join(rnum) => {
-                        out.push_str(&rnum.to_string())
+                        // out.push_str(&rnum.to_string())
+                        write_rnum(rnum, &mut out)
                     }
                 }
             },
