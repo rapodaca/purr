@@ -23,7 +23,9 @@ Parse ethanol into an abstract syntax tree:
 ```rust
 use purr::read::{ read, Reading, Error };
 use purr::tree::{ Atom, Link, Target };
-use purr::parts::{ AtomKind, Aliphatic, BondKind, Element, BracketSymbol };
+use purr::parts::{
+  AtomKind, Aliphatic, BondKind, Element, BracketSymbol, VirtualHydrogen
+};
 
 fn main() -> Result<(), Error> {
     let Reading { root, trace } = read("OC[CH3]")?;
@@ -43,7 +45,7 @@ fn main() -> Result<(), Error> {
                                     isotope: None,
                                     symbol: BracketSymbol::Element(Element::C),
                                     parity: None,
-                                    hcount: Some(3),
+                                    hcount: Some(VirtualHydrogen::H3),
                                     charge: None,
                                     map: None
                                 },
