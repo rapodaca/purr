@@ -1,4 +1,4 @@
-use crate::parts::{ AtomKind };
+use crate::parts::{ AtomKind, VirtualHydrogen };
 use crate::tree::{ Atom };
 use super::{
     scanner::Scanner,
@@ -38,26 +38,33 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
     }
 }
 
-fn read_hcount(scanner: &mut Scanner) -> Result<Option<u8>, Error> {
-    if let Some('H') = scanner.peek() {
-        scanner.pop();
+fn read_hcount(
+    scanner: &mut Scanner
+) -> Result<Option<VirtualHydrogen>, Error> {
+    match scanner.peek() {
+        Some('H') => {
+            scanner.pop();
 
-        match scanner.peek() {
-            Some('0'..='9') => {
-                // https://stackoverflow.com/a/43985705/54426
-                Ok(Some(*scanner.pop().unwrap() as u8 - '0' as u8))
-            },
-            Some(_) => {
-                Ok(Some(1))
-            },
-            None => Ok(None)
-        }
-    } else {
-        Ok(None)
+            match scanner.peek() {
+                Some('0'..='9') => match scanner.pop() {
+                    Some('0') => Ok(Some(VirtualHydrogen::H0)),
+                    Some('1') => Ok(Some(VirtualHydrogen::H1)),
+                    Some('2') => Ok(Some(VirtualHydrogen::H2)),
+                    Some('3') => Ok(Some(VirtualHydrogen::H3)),
+                    Some('4') => Ok(Some(VirtualHydrogen::H4)),
+                    Some('5') => Ok(Some(VirtualHydrogen::H5)),
+                    Some('6') => Ok(Some(VirtualHydrogen::H6)),
+                    Some('7') => Ok(Some(VirtualHydrogen::H7)),
+                    Some('8') => Ok(Some(VirtualHydrogen::H8)),
+                    Some('9') => Ok(Some(VirtualHydrogen::H9)),
+                    _ => Ok(Some(VirtualHydrogen::H1))
+                },
+                _ => Ok(Some(VirtualHydrogen::H1))
+            }
+        },
+        _ => Ok(None)
     }
 }
-
-
 
 fn read_map(scanner: &mut Scanner) -> Result<Option<u16>, Error> {
     match scanner.peek() {
@@ -185,7 +192,7 @@ mod tests {
                 isotope: None,
                 symbol: BracketSymbol::Star,
                 parity: None,
-                hcount: Some(2),
+                hcount: Some(VirtualHydrogen::H2),
                 charge: None,
                 map: None
             },

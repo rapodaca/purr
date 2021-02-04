@@ -103,12 +103,15 @@ fn create_atom(
 
     if let parts::AtomKind::Bracket { parity, hcount, .. } = &mut kind {
         if let Some(parity) = parity {
-            if hcount.unwrap_or_default() > 0 {
-                if parity == &parts::Parity::Clockwise {
-                    std::mem::swap(parity, &mut parts::Parity::Counterclockwise)
-                } else if parity == &parts::Parity::Counterclockwise {
-                    std::mem::swap(parity, &mut parts::Parity::Clockwise)
-                }
+            match hcount {
+                Some(hcount) => if !hcount.is_zero() {
+                    if parity == &parts::Parity::Clockwise {
+                        std::mem::swap(parity, &mut parts::Parity::Counterclockwise)
+                    } else if parity == &parts::Parity::Counterclockwise {
+                        std::mem::swap(parity, &mut parts::Parity::Clockwise)
+                    }
+                },
+                None => ()
             }
         }
     }
@@ -184,7 +187,10 @@ struct Open {
 mod tests {
     use pretty_assertions::assert_eq;
     use crate::read::read;
-    use crate::parts::{ AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Parity };
+    use crate::parts::{
+        AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Parity,
+        VirtualHydrogen
+    };
     use super::*;
 
     #[test]
@@ -452,7 +458,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
-                hcount: Some(1),
+                hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 parity: Some(Parity::Counterclockwise),
                 map: None
@@ -473,7 +479,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
-                hcount: Some(1),
+                hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 parity: Some(Parity::Clockwise),
                 map: None

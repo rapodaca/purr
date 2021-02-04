@@ -7,6 +7,7 @@ mod bracket_symbol;
 mod element;
 mod parity;
 mod charge;
+mod virtual_hydrogen;
 
 pub use aliphatic::Aliphatic;
 pub use aromatic::Aromatic;
@@ -17,3 +18,4 @@ pub use bracket_symbol::BracketSymbol;
 pub use element::Element;
 pub use parity::Parity;
 pub use charge::Charge;
+pub use virtual_hydrogen::VirtualHydrogen;

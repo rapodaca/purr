@@ -200,7 +200,9 @@ fn read_union(
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use crate::parts::{ Element, AtomKind, Aliphatic, BracketSymbol, Aromatic };
+    use crate::parts::{
+        Element, AtomKind, Aliphatic, BracketSymbol, Aromatic, VirtualHydrogen
+    };
     use crate::tree::{ Rnum };
     use super::*;
 
@@ -285,7 +287,7 @@ mod tests {
                     isotope: None,
                     symbol: BracketSymbol::Element(Element::C),
                     parity: None,
-                    hcount: Some(4),
+                    hcount: Some(VirtualHydrogen::H4),
                     charge: None,
                     map: None
                 },
@@ -369,7 +371,7 @@ mod tests {
                                 isotope: None,
                                 symbol: BracketSymbol::Element(Element::C),
                                 parity: None,
-                                hcount: Some(4),
+                                hcount: Some(VirtualHydrogen::H4),
                                 charge: None,
                                 map: None
                             },

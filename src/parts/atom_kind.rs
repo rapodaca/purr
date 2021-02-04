@@ -1,4 +1,6 @@
-use super::{ Aliphatic, Aromatic, BracketSymbol, Parity, Element, Charge };
+use super::{
+    Aliphatic, Aromatic, BracketSymbol, Parity, Element, Charge, VirtualHydrogen
+};
 
 /// Minimal context-sensitive representation of an atom kind.
 #[derive(Debug,PartialEq)]
@@ -10,7 +12,7 @@ pub enum AtomKind {
         isotope: Option<u16>,
         symbol: BracketSymbol,
         parity: Option<Parity>,
-        hcount: Option<u8>,
+        hcount: Option<VirtualHydrogen>,
         charge: Option<Charge>,
         map: Option<u16>
     }

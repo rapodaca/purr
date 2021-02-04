@@ -1,6 +1,6 @@
 use crate::parts::{
     AtomKind, Aliphatic, Aromatic, BracketSymbol, BracketAromatic, Parity,
-    Element, Charge
+    Element, Charge, VirtualHydrogen
 };
 
 pub fn write_atom_kind(kind: &AtomKind, out: &mut String) {
@@ -51,7 +51,7 @@ fn write_aromatic(aromatic: &Aromatic, out: &mut String) {
 fn write_bracket(
     isotope: &Option<u16>,
     symbol: &BracketSymbol,
-    hcount: &Option<u8>,
+    hcount: &Option<VirtualHydrogen>,
     charge: &Option<Charge>,
     parity: &Option<Parity>,
     map: &Option<u16>,
@@ -285,16 +285,20 @@ fn write_parity(parity: &Option<Parity>, out: &mut String) {
     }
 }
 
-fn write_hcount(hcount: &Option<u8>, out: &mut String) {
-    if let Some(hcount) = *hcount {
-        if hcount > 0 {
-            out.push('H');
-
-            if hcount > 1 {
-                out.push_str(&hcount.to_string())
-            }
-        }
-    }
+fn write_hcount(hcount: &Option<VirtualHydrogen>, out: &mut String) {
+    out.push_str(match hcount {
+        Some(VirtualHydrogen::H0) => return,
+        Some(VirtualHydrogen::H1) => "H",
+        Some(VirtualHydrogen::H2) => "H2",
+        Some(VirtualHydrogen::H3) => "H3",
+        Some(VirtualHydrogen::H4) => "H4",
+        Some(VirtualHydrogen::H5) => "H5",
+        Some(VirtualHydrogen::H6) => "H6",
+        Some(VirtualHydrogen::H7) => "H7",
+        Some(VirtualHydrogen::H8) => "H8",
+        Some(VirtualHydrogen::H9) => "H9",
+        _ => return
+    })
 }
 
 fn write_charge(charge: &Option<Charge>, out: &mut String) {
@@ -507,7 +511,7 @@ mod tests {
             isotope: None,
             symbol: BracketSymbol::Star,
             parity: None,
-            hcount: Some(0),
+            hcount: Some(VirtualHydrogen::H0),
             charge: None,
             map: None
         };
@@ -524,7 +528,7 @@ mod tests {
             isotope: None,
             symbol: BracketSymbol::Star,
             parity: None,
-            hcount: Some(1),
+            hcount: Some(VirtualHydrogen::H1),
             charge: None,
             map: None
         };
@@ -541,7 +545,7 @@ mod tests {
             isotope: None,
             symbol: BracketSymbol::Star,
             parity: None,
-            hcount: Some(2),
+            hcount: Some(VirtualHydrogen::H2),
             charge: None,
             map: None
         };
@@ -677,7 +681,7 @@ mod tests {
             isotope: Some(13),
             symbol: BracketSymbol::Element(Element::C),
             parity: Some(Parity::Clockwise),
-            hcount: Some(1),
+            hcount: Some(VirtualHydrogen::H1),
             charge: Some(Charge::One),
             map: Some(42)
         };

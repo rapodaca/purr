@@ -27,9 +27,11 @@ impl Atom {
     /// that can be added to this Atom without exceeding a valence target.
     /// This value is independent of an atom's aromaticity marking.
     pub fn subvalence(&self) -> u8 {
-        let hcount = match &self.kind {
-            AtomKind::Bracket { hcount, .. } =>
-                hcount.unwrap_or_default(),
+        let hcount: u8 = match &self.kind {
+            AtomKind::Bracket { hcount, .. } => match hcount {
+                Some(hcount) => hcount.into(),
+                None => 0
+            }
             _ => 0
         };
         let valence = self.bonds.iter().fold(hcount, |sum,bond| {
@@ -51,7 +53,7 @@ impl Atom {
 mod subvalence {
     use crate::parts::{
         BondKind, BracketSymbol, Element, BracketAromatic, Aliphatic, Aromatic,
-        Charge
+        Charge, VirtualHydrogen
     };
     use super::*;
 
@@ -127,7 +129,7 @@ mod subvalence {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
                 parity: None,
-                hcount: Some(1),
+                hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 map: None
             },
@@ -184,7 +186,7 @@ mod subvalence {
                 isotope: None,
                 symbol: BracketSymbol::Aromatic(BracketAromatic::C),
                 parity: None,
-                hcount: Some(1),
+                hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 map: None
             },
