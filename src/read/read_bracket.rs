@@ -5,6 +5,8 @@ use super::{
     read_symbol::read_symbol,
     read_charge::read_charge,
     read_parity::read_parity,
+    read_number::read_number,
+    missing_character::missing_character,
     Error
 };
 
@@ -15,7 +17,7 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
         return Ok(None);
     }
 
-    let isotope = triple_digits(scanner);
+    let isotope = read_number(scanner)?;
     let symbol = read_symbol(scanner)?;
     let parity = read_parity(scanner)?;
     let hcount = read_hcount(scanner)?;
@@ -71,36 +73,12 @@ fn read_map(scanner: &mut Scanner) -> Result<Option<u16>, Error> {
         Some(':') => {
             scanner.pop();
 
-            match triple_digits(scanner) {
-                Some(digits) => {
-                    Ok(Some(digits))
-                },
-                None => Err(Error::InvalidCharacter(scanner.cursor()))
+            match read_number(scanner)? {
+                Some(number) => Ok(Some(number)),
+                None => return Err(missing_character(scanner))
             }
         },
         _ => Ok(None)
-    }
-}
-
-fn triple_digits(scanner: &mut Scanner) -> Option<u16> {
-    let mut string = String::new();
-
-    for _ in 0..3 {
-        if let Some(digit) = scanner.peek() {
-            if digit.is_ascii_digit() {
-                string.push(*scanner.pop().unwrap());
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-
-    if string.is_empty() {
-        None
-    } else {
-        Some(string.parse::<u16>().unwrap())
     }
 }
 
@@ -112,6 +90,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn overflow_map() {
+        let mut scanner = Scanner::new("[*:65536]");
+
+        assert_eq!(read_bracket(&mut scanner), Err(Error::NumberOverflow(3)))
+    }
+
+    #[test]
+    fn overflow_isotope() {
+        let mut scanner = Scanner::new("[65536U]");
+
+        assert_eq!(read_bracket(&mut scanner), Err(Error::NumberOverflow(1)))
+    }
+
+    #[test]
     fn bracket_invalid() {
         let mut scanner = Scanner::new("[Q]");
 
@@ -121,6 +113,20 @@ mod tests {
     #[test]
     fn no_close() {
         let mut scanner = Scanner::new("[C");
+
+        assert_eq!(read_bracket(&mut scanner), Err(Error::EndOfLine))
+    }
+
+    #[test]
+    fn colon_but_no_map() {
+        let mut scanner = Scanner::new("[C:]");
+
+        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(3)))
+    }
+
+    #[test]
+    fn colon_eol() {
+        let mut scanner = Scanner::new("[C:");
 
         assert_eq!(read_bracket(&mut scanner), Err(Error::EndOfLine))
     }
@@ -151,11 +157,11 @@ mod tests {
 
     #[test]
     fn star_isotope() {
-        let mut scanner = Scanner::new("[12*]");
+        let mut scanner = Scanner::new("[65535*]");
 
         assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
             kind: AtomKind::Bracket {
-                isotope: Some(12),
+                isotope: Some(65535),
                 symbol: BracketSymbol::Star,
                 parity: None,
                 hcount: None,
@@ -219,7 +225,7 @@ mod tests {
 
     #[test]
     fn star_map() {
-        let mut scanner = Scanner::new("[*:123]");
+        let mut scanner = Scanner::new("[*:65535]");
 
         assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
             kind: AtomKind::Bracket {
@@ -228,7 +234,7 @@ mod tests {
                 parity: None,
                 hcount: None,
                 charge: None,
-                map: Some(123)
+                map: Some(65535)
             },
             links: vec![ ]
         })))

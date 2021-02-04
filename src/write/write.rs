@@ -45,7 +45,6 @@ pub fn write(root: &Atom) -> String {
                         tail(branch, target, &mut out, &mut stack)
                     },
                     Target::Join(rnum) => {
-                        // out.push_str(&rnum.to_string())
                         write_rnum(rnum, &mut out)
                     }
                 }
