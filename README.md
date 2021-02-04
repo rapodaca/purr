@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-purr = "0.7"
+purr = "0.8"
 ```
 
 ## Examples
