@@ -1,11 +1,12 @@
-use crate::parts::{ AtomKind, VirtualHydrogen };
+use std::convert::TryInto;
+
+use crate::parts::{ AtomKind, VirtualHydrogen, Number };
 use crate::tree::{ Atom };
 use super::{
     scanner::Scanner,
     read_symbol::read_symbol,
     read_charge::read_charge,
     read_parity::read_parity,
-    read_number::read_number,
     missing_character::missing_character,
     Error
 };
@@ -17,7 +18,7 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
         return Ok(None);
     }
 
-    let isotope = read_number(scanner)?;
+    let isotope = read_isotope(scanner)?;
     let symbol = read_symbol(scanner)?;
     let parity = read_parity(scanner)?;
     let hcount = read_hcount(scanner)?;
@@ -68,15 +69,48 @@ fn read_hcount(
     }
 }
 
-fn read_map(scanner: &mut Scanner) -> Result<Option<u16>, Error> {
+fn read_isotope(scanner: &mut Scanner) -> Result<Option<Number>, Error> {
+    let mut digits = String::new();
+
+    for _ in 0..3 {
+        match scanner.peek() {
+            Some('0'..='9') => digits.push(*scanner.pop().expect("digit")),
+            _ => break
+        }
+    }
+
+    if digits.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(digits.try_into().expect("number")))
+    }
+}
+
+fn read_map(scanner: &mut Scanner) -> Result<Option<Number>, Error> {
     match scanner.peek() {
         Some(':') => {
             scanner.pop();
 
-            match read_number(scanner)? {
-                Some(number) => Ok(Some(number)),
+            let mut digits = String::new();
+
+            match scanner.pop() {
+                Some(next) => if next.is_ascii_digit() {
+                    digits.push(*next);
+                } else {
+                    return Err(Error::InvalidCharacter(scanner.cursor() - 1))
+                },
                 None => return Err(missing_character(scanner))
             }
+ 
+            for _ in 0..2 {
+                match scanner.peek() {
+                    Some('0'..='9') =>
+                        digits.push(*scanner.pop().expect("digit")),
+                    _ => break
+                }
+            }
+
+            Ok(Some(digits.try_into().expect("number")))
         },
         _ => Ok(None)
     }
@@ -84,6 +118,7 @@ fn read_map(scanner: &mut Scanner) -> Result<Option<u16>, Error> {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
     use pretty_assertions::assert_eq;
     use crate::parts::{ BracketSymbol, Parity, BracketAromatic, Charge };
     use crate::tree::Atom;
@@ -91,16 +126,16 @@ mod tests {
 
     #[test]
     fn overflow_map() {
-        let mut scanner = Scanner::new("[*:65536]");
+        let mut scanner = Scanner::new("[*:1000]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::NumberOverflow(3)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(6)))
     }
 
     #[test]
     fn overflow_isotope() {
-        let mut scanner = Scanner::new("[65536U]");
+        let mut scanner = Scanner::new("[1000U]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::NumberOverflow(1)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(4)))
     }
 
     #[test]
@@ -157,11 +192,11 @@ mod tests {
 
     #[test]
     fn star_isotope() {
-        let mut scanner = Scanner::new("[65535*]");
+        let mut scanner = Scanner::new("[999*]");
 
         assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
             kind: AtomKind::Bracket {
-                isotope: Some(65535),
+                isotope: Some(999.try_into().unwrap()),
                 symbol: BracketSymbol::Star,
                 parity: None,
                 hcount: None,
@@ -225,7 +260,7 @@ mod tests {
 
     #[test]
     fn star_map() {
-        let mut scanner = Scanner::new("[*:65535]");
+        let mut scanner = Scanner::new("[*:999]");
 
         assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
             kind: AtomKind::Bracket {
@@ -234,7 +269,7 @@ mod tests {
                 parity: None,
                 hcount: None,
                 charge: None,
-                map: Some(65535)
+                map: Some(999u16.try_into().unwrap())
             },
             links: vec![ ]
         })))

@@ -1,6 +1,6 @@
 use crate::parts::{
     AtomKind, Aliphatic, Aromatic, BracketSymbol, BracketAromatic, Parity,
-    Element, Charge, VirtualHydrogen
+    Element, Charge, VirtualHydrogen, Number
 };
 
 pub fn write_atom_kind(kind: &AtomKind, out: &mut String) {
@@ -49,12 +49,12 @@ fn write_aromatic(aromatic: &Aromatic, out: &mut String) {
 }
 
 fn write_bracket(
-    isotope: &Option<u16>,
+    isotope: &Option<Number>,
     symbol: &BracketSymbol,
     hcount: &Option<VirtualHydrogen>,
     charge: &Option<Charge>,
     parity: &Option<Parity>,
-    map: &Option<u16>,
+    map: &Option<Number>,
     out: &mut String
 ) {
     out.push('[');
@@ -69,7 +69,7 @@ fn write_bracket(
     out.push(']')
 }
 
-fn write_isotope(isotope: &Option<u16>, out: &mut String) {
+fn write_isotope(isotope: &Option<Number>, out: &mut String) {
     if let Some(isotope) = isotope {
         out.push_str(&isotope.to_string())
     }
@@ -342,17 +342,16 @@ fn write_charge(charge: &Option<Charge>, out: &mut String) {
     }
 }
 
-fn write_map(map: &Option<u16>, out: &mut String) {
-    if let Some(map) = *map {
-        if map > 0 {
-            out.push(':');
-            out.push_str(&map.to_string())
-        }
+fn write_map(map: &Option<Number>, out: &mut String) {
+    if let Some(map) = map {
+        out.push(':');
+        out.push_str(&map.to_string())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
     use pretty_assertions::assert_eq;
     use super::*;
 
@@ -440,7 +439,7 @@ mod tests {
     #[test]
     fn isotope() {
         let kind = AtomKind::Bracket {
-            isotope: Some(12),
+            isotope: Some(12.try_into().unwrap()),
             symbol: BracketSymbol::Star,
             parity: None,
             hcount: None,
@@ -649,13 +648,13 @@ mod tests {
             parity: None,
             hcount: None,
             charge: None,
-            map: Some(0)
+            map: Some(0.try_into().unwrap())
         };
         let mut out = String::new();
 
         write_atom_kind(&kind, &mut out);
 
-        assert_eq!(out, "[*]")
+        assert_eq!(out, "[*:0]")
     }
 
     #[test]
@@ -666,7 +665,7 @@ mod tests {
             parity: None,
             hcount: None,
             charge: None,
-            map: Some(13)
+            map: Some(13.try_into().unwrap())
         };
         let mut out = String::new();
 
@@ -678,12 +677,12 @@ mod tests {
     #[test]
     fn kitchen_sink() {
         let kind = AtomKind::Bracket {
-            isotope: Some(13),
+            isotope: Some(13.try_into().unwrap()),
             symbol: BracketSymbol::Element(Element::C),
             parity: Some(Parity::Clockwise),
             hcount: Some(VirtualHydrogen::H1),
             charge: Some(Charge::One),
-            map: Some(42)
+            map: Some(42.try_into().unwrap())
         };
         let mut out = String::new();
 

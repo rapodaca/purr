@@ -7,7 +7,6 @@ mod read_charge;
 mod read_bracket;
 mod read_organic;
 mod read_parity;
-mod read_number;
 mod read;
 mod reading;
 mod scanner;

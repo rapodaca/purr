@@ -8,6 +8,7 @@ mod element;
 mod parity;
 mod charge;
 mod virtual_hydrogen;
+mod number;
 
 pub use aliphatic::Aliphatic;
 pub use aromatic::Aromatic;
@@ -19,3 +20,4 @@ pub use element::Element;
 pub use parity::Parity;
 pub use charge::Charge;
 pub use virtual_hydrogen::VirtualHydrogen;
+pub use number::Number;
