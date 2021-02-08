@@ -6,7 +6,7 @@ mod read_symbol;
 mod read_charge;
 mod read_bracket;
 mod read_organic;
-mod read_parity;
+mod read_configuration;
 mod read;
 mod reading;
 mod scanner;

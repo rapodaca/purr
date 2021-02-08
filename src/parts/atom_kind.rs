@@ -1,5 +1,5 @@
 use super::{
-    Aliphatic, Aromatic, BracketSymbol, Parity, Element, Charge,
+    Aliphatic, Aromatic, BracketSymbol, Configuration, Element, Charge,
     VirtualHydrogen, Number
 };
 
@@ -12,7 +12,7 @@ pub enum AtomKind {
     Bracket {
         isotope: Option<Number>,
         symbol: BracketSymbol,
-        parity: Option<Parity>,
+        configuration: Option<Configuration>,
         hcount: Option<VirtualHydrogen>,
         charge: Option<Charge>,
         map: Option<Number>

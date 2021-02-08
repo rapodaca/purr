@@ -1,5 +1,5 @@
 use crate::parts::{
-    AtomKind, Aliphatic, Aromatic, BracketSymbol, BracketAromatic, Parity,
+    AtomKind, Aliphatic, Aromatic, BracketSymbol, BracketAromatic, Configuration,
     Element, Charge, VirtualHydrogen, Number
 };
 
@@ -9,9 +9,9 @@ pub fn write_atom_kind(kind: &AtomKind, out: &mut String) {
         AtomKind::Aliphatic(aliphatic) => write_aliphatic(aliphatic, out),
         AtomKind::Aromatic(aromatic) => write_aromatic(aromatic, out),
         AtomKind::Bracket {
-            isotope, symbol, hcount, charge, parity, map
+            isotope, symbol, hcount, charge, configuration, map
         } => write_bracket(
-            isotope, symbol, hcount, charge, parity, map, out
+            isotope, symbol, hcount, charge, configuration, map, out
         )
     }
 }
@@ -53,7 +53,7 @@ fn write_bracket(
     symbol: &BracketSymbol,
     hcount: &Option<VirtualHydrogen>,
     charge: &Option<Charge>,
-    parity: &Option<Parity>,
+    configuration: &Option<Configuration>,
     map: &Option<Number>,
     out: &mut String
 ) {
@@ -61,7 +61,7 @@ fn write_bracket(
 
     write_isotope(isotope, out);
     write_symbol(symbol, out);
-    write_parity(parity, out);
+    write_configuration(configuration, out);
     write_hcount(hcount, out);
     write_charge(charge, out);
     write_map(map, out);
@@ -220,67 +220,69 @@ fn write_element(element: &Element, out: &mut String) {
     })
 }
 
-fn write_parity(parity: &Option<Parity>, out: &mut String) {
-    match parity {
-        Some(Parity::Clockwise) => out.push_str("@@"),
-        Some(Parity::Counterclockwise) => out.push('@'),
-        Some(Parity::TH1) => out.push_str("@TH1"),
-        Some(Parity::TH2) => out.push_str("@TH2"),
-        Some(Parity::AL1) => out.push_str("@AL1"),
-        Some(Parity::AL2) => out.push_str("@AL2"),
-        Some(Parity::TB1) => out.push_str("@TB1"),
-        Some(Parity::TB2) => out.push_str("@TB2"),
-        Some(Parity::TB3) => out.push_str("@TB3"),
-        Some(Parity::TB4) => out.push_str("@TB4"),
-        Some(Parity::TB5) => out.push_str("@TB5"),
-        Some(Parity::TB6) => out.push_str("@TB6"),
-        Some(Parity::TB7) => out.push_str("@TB7"),
-        Some(Parity::TB8) => out.push_str("@TB8"),
-        Some(Parity::TB9) => out.push_str("@TB9"),
-        Some(Parity::TB10) => out.push_str("@TB10"),
-        Some(Parity::TB11) => out.push_str("@TB11"),
-        Some(Parity::TB12) => out.push_str("@TB12"),
-        Some(Parity::TB13) => out.push_str("@TB13"),
-        Some(Parity::TB14) => out.push_str("@TB14"),
-        Some(Parity::TB15) => out.push_str("@TB15"),
-        Some(Parity::TB16) => out.push_str("@TB16"),
-        Some(Parity::TB17) => out.push_str("@TB17"),
-        Some(Parity::TB18) => out.push_str("@TB18"),
-        Some(Parity::TB19) => out.push_str("@TB19"),
-        Some(Parity::TB20) => out.push_str("@TH1"),
-        Some(Parity::OH1) => out.push_str("@OH1"),
-        Some(Parity::OH2) => out.push_str("@OH2"),
-        Some(Parity::OH3) => out.push_str("@TH1"),
-        Some(Parity::OH4) => out.push_str("@OH4"),
-        Some(Parity::OH5) => out.push_str("@OH5"),
-        Some(Parity::OH6) => out.push_str("@OH6"),
-        Some(Parity::OH7) => out.push_str("@OH7"),
-        Some(Parity::OH8) => out.push_str("@OH8"),
-        Some(Parity::OH9) => out.push_str("@OH9"),
-        Some(Parity::OH10) => out.push_str("@OH10"),
-        Some(Parity::OH11) => out.push_str("@OH11"),
-        Some(Parity::OH12) => out.push_str("@OH12"),
-        Some(Parity::OH13) => out.push_str("@OH13"),
-        Some(Parity::OH14) => out.push_str("@OH6"),
-        Some(Parity::OH15) => out.push_str("@OH15"),
-        Some(Parity::OH16) => out.push_str("@OH16"),
-        Some(Parity::OH17) => out.push_str("@OH17"),
-        Some(Parity::OH18) => out.push_str("@OH18"),
-        Some(Parity::OH19) => out.push_str("@OH19"),
-        Some(Parity::OH20) => out.push_str("@OH20"),
-        Some(Parity::OH21) => out.push_str("@OH21"),
-        Some(Parity::OH22) => out.push_str("@OH22"),
-        Some(Parity::OH23) => out.push_str("@OH23"),
-        Some(Parity::OH24) => out.push_str("@OH24"),
-        Some(Parity::OH25) => out.push_str("@OH25"),
-        Some(Parity::OH26) => out.push_str("@OH26"),
-        Some(Parity::OH27) => out.push_str("@OH27"),
-        Some(Parity::OH28) => out.push_str("@OH28"),
-        Some(Parity::OH29) => out.push_str("@OH29"),
-        Some(Parity::OH30) => out.push_str("@OH30"),
-        Some(Parity::SP1) => out.push_str("@SP1"),
-        Some(Parity::SP2) => out.push_str("@SP2"),
-        Some(Parity::SP3) => out.push_str("@SP3"),
+fn write_configuration(
+    configuration: &Option<Configuration>, out: &mut String
+) {
+    match configuration {
+        Some(Configuration::Clockwise) => out.push_str("@@"),
+        Some(Configuration::Counterclockwise) => out.push('@'),
+        Some(Configuration::TH1) => out.push_str("@TH1"),
+        Some(Configuration::TH2) => out.push_str("@TH2"),
+        Some(Configuration::AL1) => out.push_str("@AL1"),
+        Some(Configuration::AL2) => out.push_str("@AL2"),
+        Some(Configuration::TB1) => out.push_str("@TB1"),
+        Some(Configuration::TB2) => out.push_str("@TB2"),
+        Some(Configuration::TB3) => out.push_str("@TB3"),
+        Some(Configuration::TB4) => out.push_str("@TB4"),
+        Some(Configuration::TB5) => out.push_str("@TB5"),
+        Some(Configuration::TB6) => out.push_str("@TB6"),
+        Some(Configuration::TB7) => out.push_str("@TB7"),
+        Some(Configuration::TB8) => out.push_str("@TB8"),
+        Some(Configuration::TB9) => out.push_str("@TB9"),
+        Some(Configuration::TB10) => out.push_str("@TB10"),
+        Some(Configuration::TB11) => out.push_str("@TB11"),
+        Some(Configuration::TB12) => out.push_str("@TB12"),
+        Some(Configuration::TB13) => out.push_str("@TB13"),
+        Some(Configuration::TB14) => out.push_str("@TB14"),
+        Some(Configuration::TB15) => out.push_str("@TB15"),
+        Some(Configuration::TB16) => out.push_str("@TB16"),
+        Some(Configuration::TB17) => out.push_str("@TB17"),
+        Some(Configuration::TB18) => out.push_str("@TB18"),
+        Some(Configuration::TB19) => out.push_str("@TB19"),
+        Some(Configuration::TB20) => out.push_str("@TH1"),
+        Some(Configuration::OH1) => out.push_str("@OH1"),
+        Some(Configuration::OH2) => out.push_str("@OH2"),
+        Some(Configuration::OH3) => out.push_str("@TH1"),
+        Some(Configuration::OH4) => out.push_str("@OH4"),
+        Some(Configuration::OH5) => out.push_str("@OH5"),
+        Some(Configuration::OH6) => out.push_str("@OH6"),
+        Some(Configuration::OH7) => out.push_str("@OH7"),
+        Some(Configuration::OH8) => out.push_str("@OH8"),
+        Some(Configuration::OH9) => out.push_str("@OH9"),
+        Some(Configuration::OH10) => out.push_str("@OH10"),
+        Some(Configuration::OH11) => out.push_str("@OH11"),
+        Some(Configuration::OH12) => out.push_str("@OH12"),
+        Some(Configuration::OH13) => out.push_str("@OH13"),
+        Some(Configuration::OH14) => out.push_str("@OH6"),
+        Some(Configuration::OH15) => out.push_str("@OH15"),
+        Some(Configuration::OH16) => out.push_str("@OH16"),
+        Some(Configuration::OH17) => out.push_str("@OH17"),
+        Some(Configuration::OH18) => out.push_str("@OH18"),
+        Some(Configuration::OH19) => out.push_str("@OH19"),
+        Some(Configuration::OH20) => out.push_str("@OH20"),
+        Some(Configuration::OH21) => out.push_str("@OH21"),
+        Some(Configuration::OH22) => out.push_str("@OH22"),
+        Some(Configuration::OH23) => out.push_str("@OH23"),
+        Some(Configuration::OH24) => out.push_str("@OH24"),
+        Some(Configuration::OH25) => out.push_str("@OH25"),
+        Some(Configuration::OH26) => out.push_str("@OH26"),
+        Some(Configuration::OH27) => out.push_str("@OH27"),
+        Some(Configuration::OH28) => out.push_str("@OH28"),
+        Some(Configuration::OH29) => out.push_str("@OH29"),
+        Some(Configuration::OH30) => out.push_str("@OH30"),
+        Some(Configuration::SP1) => out.push_str("@SP1"),
+        Some(Configuration::SP2) => out.push_str("@SP2"),
+        Some(Configuration::SP3) => out.push_str("@SP3"),
         None => (),
     }
 }
@@ -390,7 +392,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: None
@@ -407,7 +409,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Aromatic(BracketAromatic::C),
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: None
@@ -424,7 +426,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Element(Element::C),
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: None
@@ -441,7 +443,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: Some(12.try_into().unwrap()),
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: None
@@ -454,11 +456,11 @@ mod tests {
     }
 
     #[test]
-    fn parity_clockwise() {
+    fn configuration_clockwise() {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: Some(Parity::Clockwise),
+            configuration: Some(Configuration::Clockwise),
             hcount: None,
             charge: None,
             map: None
@@ -471,11 +473,11 @@ mod tests {
     }
 
     #[test]
-    fn parity_counterclockwise() {
+    fn configuration_counterclockwise() {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: Some(Parity::Counterclockwise),
+            configuration: Some(Configuration::Counterclockwise),
             hcount: None,
             charge: None,
             map: None
@@ -488,11 +490,11 @@ mod tests {
     }
 
     #[test]
-    fn parity_tetrahedral() {
+    fn configuration_tetrahedral() {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: Some(Parity::TH1),
+            configuration: Some(Configuration::TH1),
             hcount: None,
             charge: None,
             map: None
@@ -509,7 +511,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: Some(VirtualHydrogen::H0),
             charge: None,
             map: None
@@ -526,7 +528,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: Some(VirtualHydrogen::H1),
             charge: None,
             map: None
@@ -543,7 +545,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: Some(VirtualHydrogen::H2),
             charge: None,
             map: None
@@ -560,7 +562,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: Some(Charge::Zero),
             map: None
@@ -577,7 +579,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: Some(Charge::One),
             map: None
@@ -594,7 +596,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: Some(Charge::Two),
             map: None
@@ -611,7 +613,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: Some(Charge::MinusOne),
             map: None
@@ -628,7 +630,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: Some(Charge::MinusTwo),
             map: None
@@ -645,7 +647,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: Some(0.try_into().unwrap())
@@ -662,7 +664,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            parity: None,
+            configuration: None,
             hcount: None,
             charge: None,
             map: Some(13.try_into().unwrap())
@@ -679,7 +681,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: Some(13.try_into().unwrap()),
             symbol: BracketSymbol::Element(Element::C),
-            parity: Some(Parity::Clockwise),
+            configuration: Some(Configuration::Clockwise),
             hcount: Some(VirtualHydrogen::H1),
             charge: Some(Charge::One),
             map: Some(42.try_into().unwrap())

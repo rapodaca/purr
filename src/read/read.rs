@@ -286,7 +286,7 @@ mod tests {
                 kind: AtomKind::Bracket {
                     isotope: None,
                     symbol: BracketSymbol::Element(Element::C),
-                    parity: None,
+                    configuration: None,
                     hcount: Some(VirtualHydrogen::H4),
                     charge: None,
                     map: None
@@ -370,7 +370,7 @@ mod tests {
                             kind: AtomKind::Bracket {
                                 isotope: None,
                                 symbol: BracketSymbol::Element(Element::C),
-                                parity: None,
+                                configuration: None,
                                 hcount: Some(VirtualHydrogen::H4),
                                 charge: None,
                                 map: None

@@ -44,7 +44,7 @@ fn main() -> Result<(), Error> {
                                 kind: AtomKind::Bracket {
                                     isotope: None,
                                     symbol: BracketSymbol::Element(Element::C),
-                                    parity: None,
+                                    configuration: None,
                                     hcount: Some(VirtualHydrogen::H3),
                                     charge: None,
                                     map: None

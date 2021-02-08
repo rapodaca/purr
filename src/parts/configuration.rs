@@ -1,7 +1,7 @@
-/// Code representing one of several atomic parities. Most applications
+/// Representation of a configurational template. Most applications
 /// will use only `Clockwise` and `Counterclockwise`.
 #[derive(Debug,PartialEq,Clone)]
-pub enum Parity {
+pub enum Configuration {
     Clockwise,
     Counterclockwise,
     AL1,

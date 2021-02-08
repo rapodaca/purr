@@ -101,14 +101,18 @@ fn create_atom(
 ) -> Atom {
     let bond = Bond { kind: input.reverse(), tid };
 
-    if let parts::AtomKind::Bracket { parity, hcount, .. } = &mut kind {
-        if let Some(parity) = parity {
+    if let parts::AtomKind::Bracket { configuration, hcount, .. } = &mut kind {
+        if let Some(configuration) = configuration {
             match hcount {
                 Some(hcount) => if !hcount.is_zero() {
-                    if parity == &parts::Parity::Clockwise {
-                        std::mem::swap(parity, &mut parts::Parity::Counterclockwise)
-                    } else if parity == &parts::Parity::Counterclockwise {
-                        std::mem::swap(parity, &mut parts::Parity::Clockwise)
+                    if configuration == &parts::Configuration::Clockwise {
+                        std::mem::swap(
+                            configuration, &mut parts::Configuration::Counterclockwise
+                        )
+                    } else if configuration == &parts::Configuration::Counterclockwise {
+                        std::mem::swap(
+                            configuration, &mut parts::Configuration::Clockwise
+                        )
                     }
                 },
                 None => ()
@@ -188,7 +192,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use crate::read::read;
     use crate::parts::{
-        AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Parity,
+        AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Configuration,
         VirtualHydrogen
     };
     use super::*;
@@ -451,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn atom_parity_hydrogen_stereocentric() {
+    fn atom_configuration_hydrogen_stereocentric() {
         let root = read("[C@H](F)(Cl)Br").unwrap().root;
 
         assert_eq!(from_tree(root).unwrap()[0], Atom {
@@ -460,7 +464,7 @@ mod tests {
                 symbol: BracketSymbol::Element(Element::C),
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
-                parity: Some(Parity::Counterclockwise),
+                configuration: Some(Configuration::Counterclockwise),
                 map: None
             },
             bonds: vec![
@@ -472,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn atom_parity_hydrogen_nonstereocentric() {
+    fn atom_configuration_hydrogen_nonstereocentric() {
         let root = read("C[C@H](F)Cl").unwrap().root;
 
         assert_eq!(from_tree(root).unwrap()[1], Atom {
@@ -481,7 +485,7 @@ mod tests {
                 symbol: BracketSymbol::Element(Element::C),
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
-                parity: Some(Parity::Clockwise),
+                configuration: Some(Configuration::Clockwise),
                 map: None
             },
             bonds: vec![

@@ -109,7 +109,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: None
@@ -128,7 +128,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
-                parity: None,
+                configuration: None,
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 map: None
@@ -147,7 +147,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: None
@@ -166,7 +166,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Aromatic(BracketAromatic::C),
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: None
@@ -185,7 +185,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Aromatic(BracketAromatic::C),
-                parity: None,
+                configuration: None,
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
                 map: None
@@ -204,7 +204,7 @@ mod subvalence {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Aromatic(BracketAromatic::S),
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: Some(Charge::One),
                 map: None

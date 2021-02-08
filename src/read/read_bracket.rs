@@ -6,7 +6,7 @@ use super::{
     scanner::Scanner,
     read_symbol::read_symbol,
     read_charge::read_charge,
-    read_parity::read_parity,
+    read_configuration::read_configuration,
     missing_character::missing_character,
     Error
 };
@@ -20,7 +20,7 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
 
     let isotope = read_isotope(scanner)?;
     let symbol = read_symbol(scanner)?;
-    let parity = read_parity(scanner)?;
+    let configuration = read_configuration(scanner)?;
     let hcount = read_hcount(scanner)?;
     let charge = read_charge(scanner)?;
     let map = read_map(scanner)?;
@@ -31,7 +31,7 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
             
             Ok(Some(Atom {
                 kind: AtomKind::Bracket {
-                    isotope, symbol, parity, hcount, charge, map
+                    isotope, symbol, configuration, hcount, charge, map
                 },
                 links: vec![ ]
             }))
@@ -120,7 +120,7 @@ fn read_map(scanner: &mut Scanner) -> Result<Option<Number>, Error> {
 mod tests {
     use std::convert::TryInto;
     use pretty_assertions::assert_eq;
-    use crate::parts::{ BracketSymbol, Parity, BracketAromatic, Charge };
+    use crate::parts::{ BracketSymbol, Configuration, BracketAromatic, Charge };
     use crate::tree::Atom;
     use super::*;
 
@@ -181,7 +181,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: None
@@ -198,7 +198,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: Some(999.try_into().unwrap()),
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: None
@@ -208,14 +208,14 @@ mod tests {
     }
 
     #[test]
-    fn star_parity() {
+    fn star_configuration() {
         let mut scanner = Scanner::new("[*@]");
 
         assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: Some(Parity::Counterclockwise),
+                configuration: Some(Configuration::Counterclockwise),
                 hcount: None,
                 charge: None,
                 map: None
@@ -232,7 +232,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: Some(VirtualHydrogen::H2),
                 charge: None,
                 map: None
@@ -249,7 +249,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: Some(Charge::One),
                 map: None
@@ -266,7 +266,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: None,
                 map: Some(999u16.try_into().unwrap())
@@ -283,7 +283,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Aromatic(BracketAromatic::S),
-                parity: None,
+                configuration: None,
                 hcount: None,
                 charge: Some(Charge::One),
                 map: None

@@ -86,14 +86,16 @@ fn write_root(
 }
 
 fn invert(kind: &mut parts::AtomKind) {
-    if let parts::AtomKind::Bracket { hcount, parity, .. } = kind {
-        if let Some(p) = parity {
+    if let parts::AtomKind::Bracket { hcount, configuration, .. } = kind {
+        if let Some(p) = configuration {
             match hcount {
                 Some(hcount) => if !hcount.is_zero() {
-                    if p == &parts::Parity::Clockwise {
-                        std::mem::swap(p, &mut parts::Parity::Counterclockwise)
-                    } else if p == &parts::Parity::Counterclockwise {
-                        std::mem::swap(p, &mut parts::Parity::Clockwise)
+                    if p == &parts::Configuration::Clockwise {
+                        std::mem::swap(
+                            p, &mut parts::Configuration::Counterclockwise
+                        )
+                    } else if p == &parts::Configuration::Counterclockwise {
+                        std::mem::swap(p, &mut parts::Configuration::Clockwise)
                     }
                 },
                 None => ()
