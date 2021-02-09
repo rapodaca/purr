@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{ graph, parts };
-use super::{ Atom, join_pool::JoinPool, Link, Target, Rnum };
+use super::{ Atom, join_pool::JoinPool, Link, Target, Rnum, Error };
 
 /// Returns the root atom in a tree corresponding to the input graph.
-pub fn from_graph(graph: Vec<graph::Atom>) -> Atom {
+pub fn from_graph(graph: Vec<graph::Atom>) -> Result<Atom, Error> {
+    let order = graph.len();
     let mut atoms = graph.into_iter().enumerate().collect::<HashMap<_,_>>();
     let mut links = Vec::new();
     let mut hub = HashMap::new();
@@ -21,7 +22,7 @@ pub fn from_graph(graph: Vec<graph::Atom>) -> Atom {
             links.push(Unit::split(last, id))
         }
         
-        write_root(id, atom, &mut atoms, &mut links, &mut hub, &mut pool);
+        write_root(id, atom, &mut atoms, &mut links, &mut hub, &mut pool, order)?;
         last.replace(id);
     }
 
@@ -29,7 +30,7 @@ pub fn from_graph(graph: Vec<graph::Atom>) -> Atom {
         unit.add_link(&mut hub)
     }
 
-    hub.remove(&0).expect("result")
+    Ok(hub.remove(&0).expect("result"))
 }
 
 fn write_root(
@@ -38,8 +39,9 @@ fn write_root(
     atoms: &mut HashMap<usize, graph::Atom>,
     links: &mut Vec<Unit>,
     hub: &mut HashMap<usize, Atom>,
-    pool: &mut JoinPool
-) {
+    pool: &mut JoinPool,
+    order: usize
+) -> Result<(), Error> {
     let mut stack = Vec::new();
 
     for bond in parent.bonds {
@@ -56,7 +58,11 @@ fn write_root(
             Some(child) => {
                 for out in child.bonds {
                     if out.tid == sid {
-                        continue
+                        if bond_kinds_match(&out.kind, &bond.kind) {
+                            continue
+                        } else {
+                            return Err(Error::TargetMismatch(bond.tid, pid))
+                        }
                     }
 
                     stack.push((bond.tid, out))
@@ -72,6 +78,10 @@ fn write_root(
                 links.push(Unit::bond(sid, bond.kind, bond.tid));
             },
             None => {
+                if bond.tid >= order {
+                    return Err(Error::TargetMismatch(sid, bond.tid))
+                }
+
                 let hit = pool.hit(sid, bond.tid);
                 let kind = if hit.closes {
                     bond.kind
@@ -83,6 +93,8 @@ fn write_root(
             }
         }
     }
+
+    Ok(())
 }
 
 fn invert(kind: &mut parts::AtomKind) {
@@ -99,6 +111,18 @@ fn invert(kind: &mut parts::AtomKind) {
                 None => ()
             }
         }
+    }
+}
+
+fn bond_kinds_match(left: &parts::BondKind, right: &parts::BondKind) -> bool {
+    if left == right {
+        true
+    } else if left == &parts::BondKind::Up && right == &parts::BondKind::Down {
+        true
+    } else if left == &parts::BondKind::Down && right == &parts::BondKind::Up {
+        true
+    } else {
+        false
     }
 }
 
@@ -160,9 +184,49 @@ mod tests {
     use super::*;
 
     #[test]
+    fn bond_tid_mismatch() {
+        let graph = vec![
+            graph::Atom {
+                kind: parts::AtomKind::Star,
+                bonds: vec![
+                    graph::Bond::new(parts::BondKind::Elided, 1)
+                ]
+            },
+            graph::Atom {
+                kind: parts::AtomKind::Star,
+                bonds: vec![
+                    graph::Bond::new(parts::BondKind::Elided, 2)
+                ]
+            }
+        ];
+
+        assert_eq!(from_graph(graph), Err(Error::TargetMismatch(1, 2)))
+    }
+
+    #[test]
+    fn bond_kind_mismatch() {
+        let graph = vec![
+            graph::Atom {
+                kind: parts::AtomKind::Star,
+                bonds: vec![
+                    graph::Bond::new(parts::BondKind::Elided, 1)
+                ]
+            },
+            graph::Atom {
+                kind: parts::AtomKind::Star,
+                bonds: vec![
+                    graph::Bond::new(parts::BondKind::Double, 0)
+                ]
+            }
+        ];
+
+        assert_eq!(from_graph(graph), Err(Error::TargetMismatch(1, 0)))
+    }
+
+    #[test]
     fn p1() {
         let graph = from_tree(read("*").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "*")
     }
@@ -170,7 +234,7 @@ mod tests {
     #[test]
     fn methane() {
         let graph = from_tree(read("C").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C")
     }
@@ -178,7 +242,7 @@ mod tests {
     #[test]
     fn p1_p1() {
         let graph = from_tree(read("*.*").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "*.*")
     }
@@ -186,7 +250,7 @@ mod tests {
     #[test]
     fn methane_ammonia_hydrate() {
         let graph = from_tree(read("C.N.O").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C.N.O")
     }
@@ -194,7 +258,7 @@ mod tests {
     #[test]
     fn methanol() {
         let graph = from_tree(read("CO").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "CO")
     }
@@ -202,7 +266,7 @@ mod tests {
     #[test]
     fn propanol() {
         let graph = from_tree(read("CCO").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "CCO")
     }
@@ -210,7 +274,7 @@ mod tests {
     #[test]
     fn propanal_explicit_bonds() {
         let graph = from_tree(read("C-C=O").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-C=O")
     }
@@ -218,7 +282,7 @@ mod tests {
     #[test]
     fn propanol_branched() {
         let graph = from_tree(read("C(O)CC").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(O)CC")
     }
@@ -226,7 +290,7 @@ mod tests {
     #[test]
     fn trihalo_methane_s3() {
         let graph = from_tree(read("C(F)(Cl)Br").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(F)(Cl)Br")
     }
@@ -234,7 +298,7 @@ mod tests {
     #[test]
     fn fluoroethanol() {
         let graph = from_tree(read("C(CF)O").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(CF)O")
     }
@@ -242,7 +306,7 @@ mod tests {
     #[test]
     fn oxirane() {
         let graph = from_tree(read("C1CO1").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C1CO1")
     }
@@ -250,7 +314,7 @@ mod tests {
     #[test]
     fn oxirane_left_single() {
         let graph = from_tree(read("C-1CO1").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-1CO1")
     }
@@ -258,7 +322,7 @@ mod tests {
     #[test]
     fn oxirane_right_single() {
         let graph = from_tree(read("C1CO-1").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-1CO1")
     }
@@ -266,7 +330,7 @@ mod tests {
     #[test]
     fn oxirane_left_right_single() {
         let graph = from_tree(read("C-1CO-1").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-1CO1")
     }
@@ -274,7 +338,7 @@ mod tests {
     #[test]
     fn bicyclobutane() {
         let graph = from_tree(read("C12CC1C2").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C12CC2C1")
     }
@@ -282,7 +346,7 @@ mod tests {
     #[test]
     fn tetrahalomethane_stereocentric() {
         let graph = from_tree(read("[C@](F)(Cl)(Br)I").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "[C@](F)(Cl)(Br)I")
     }
@@ -290,7 +354,7 @@ mod tests {
     #[test]
     fn tetrahalomethane_non_stereocentric() {
         let graph = from_tree(read("F[C@](Cl)(Br)I").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "F[C@](Cl)(Br)I")
     }
@@ -298,7 +362,7 @@ mod tests {
     #[test]
     fn trihalomethane_stereocentric() {
         let graph = from_tree(read("[C@H](F)(Cl)Br").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "[C@H](F)(Cl)Br")
     }
@@ -306,7 +370,7 @@ mod tests {
     #[test]
     fn trihalomethane_hydrate_stereocentric() {
         let graph = from_tree(read("O.[C@H](F)(Cl)Br").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "O.[C@H](F)(Cl)Br")
     }
@@ -314,7 +378,7 @@ mod tests {
     #[test]
     fn trihalomethane_non_stereocentric() {
         let graph = from_tree(read("F[C@H](Cl)Br").unwrap().root).unwrap();
-        let tree = from_graph(graph);
+        let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "F[C@H](Cl)Br")
     }
