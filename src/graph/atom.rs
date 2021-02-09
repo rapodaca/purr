@@ -1,4 +1,4 @@
-use crate::parts::{ AtomKind };
+use crate::parts::AtomKind;
 use super::Bond;
 
 /// Atom used in graph-like (adjacency) SMILES representation.
@@ -47,6 +47,29 @@ impl Atom {
         
         target - valence
     }
+
+    /// Returns the number of implicit or virtual hydrogens at this Atom,
+    /// accounting for aromaticity.
+    pub fn suppressed_hydrogens(&self) -> u8 {
+        match &self.kind {
+            AtomKind::Star => 0,
+            AtomKind::Aromatic(_) => {
+                let subvalence = self.subvalence();
+
+                if subvalence > 1 {
+                    self.subvalence() - 1
+                } else {
+                    0
+                }
+            },
+            AtomKind::Aliphatic(_) => self.subvalence(),
+            AtomKind::Bracket { hcount, .. } => match hcount {
+                Some(hcount) => hcount.into(),
+                None => 0
+            }
+        }
+    }
+    
 }
 
 #[cfg(test)]
@@ -216,5 +239,141 @@ mod subvalence {
         };
 
         assert_eq!(atom.subvalence(), 1)
+    }
+}
+
+#[cfg(test)]
+mod suppressed_hydrogens {
+    use pretty_assertions::assert_eq;
+    use crate::parts::{
+        Aromatic, Aliphatic, BondKind, BracketSymbol, Element, VirtualHydrogen
+    };
+    use super::*;
+
+    #[test]
+    fn star() {
+        let atom = Atom::new(AtomKind::Star);
+
+        assert_eq!(atom.suppressed_hydrogens(), 0)
+    }
+
+    #[test]
+    fn aromatic_subvalence_1() {
+        let atom = Atom {
+            kind: AtomKind::Aromatic(Aromatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1),
+                Bond::new(BondKind::Elided, 2),
+                Bond::new(BondKind::Elided, 3)
+            ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 0)
+    }
+
+    #[test]
+    fn aromatic_subvalence_2() {
+        let atom = Atom {
+            kind: AtomKind::Aromatic(Aromatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1),
+                Bond::new(BondKind::Elided, 2)
+            ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 1)
+    }
+
+    #[test]
+    fn aliphatic_subvalence_0() {
+        let atom = Atom {
+            kind: AtomKind::Aliphatic(Aliphatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1),
+                Bond::new(BondKind::Elided, 2),
+                Bond::new(BondKind::Elided, 3),
+                Bond::new(BondKind::Elided, 4)
+            ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 0)
+    }
+
+    #[test]
+    fn aliphatic_subvalence_1() {
+        let atom = Atom {
+            kind: AtomKind::Aliphatic(Aliphatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1),
+                Bond::new(BondKind::Elided, 2),
+                Bond::new(BondKind::Elided, 3)
+            ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 1)
+    }
+
+    #[test]
+    fn aliphatic_subvalence_2() {
+        let atom = Atom {
+            kind: AtomKind::Aliphatic(Aliphatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1),
+                Bond::new(BondKind::Elided, 2)
+            ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 2)
+    }
+
+    #[test]
+    fn bracket_h_none() {
+        let atom = Atom {
+            kind: AtomKind::Bracket {
+                isotope: None,
+                symbol: BracketSymbol::Element(Element::C),
+                hcount: None,
+                charge: None,
+                configuration: None,
+                map: None
+            },
+            bonds: vec![ ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 0)
+    }
+
+    #[test]
+    fn bracket_h0() {
+        let atom = Atom {
+            kind: AtomKind::Bracket {
+                isotope: None,
+                symbol: BracketSymbol::Element(Element::C),
+                hcount: Some(VirtualHydrogen::H0),
+                charge: None,
+                configuration: None,
+                map: None
+            },
+            bonds: vec![ ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 0)
+    }
+
+    #[test]
+    fn bracket_h1() {
+        let atom = Atom {
+            kind: AtomKind::Bracket {
+                isotope: None,
+                symbol: BracketSymbol::Element(Element::C),
+                hcount: Some(VirtualHydrogen::H1),
+                charge: None,
+                configuration: None,
+                map: None
+            },
+            bonds: vec![ ]
+        };
+
+        assert_eq!(atom.suppressed_hydrogens(), 1)
     }
 }
