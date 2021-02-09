@@ -105,13 +105,13 @@ fn create_atom(
         if let Some(configuration) = configuration {
             match hcount {
                 Some(hcount) => if !hcount.is_zero() {
-                    if configuration == &parts::Configuration::Clockwise {
+                    if configuration == &parts::Configuration::TH2 {
                         std::mem::swap(
-                            configuration, &mut parts::Configuration::Counterclockwise
+                            configuration, &mut parts::Configuration::TH1
                         )
-                    } else if configuration == &parts::Configuration::Counterclockwise {
+                    } else if configuration == &parts::Configuration::TH1 {
                         std::mem::swap(
-                            configuration, &mut parts::Configuration::Clockwise
+                            configuration, &mut parts::Configuration::TH2
                         )
                     }
                 },
@@ -464,7 +464,7 @@ mod tests {
                 symbol: BracketSymbol::Element(Element::C),
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
-                configuration: Some(Configuration::Counterclockwise),
+                configuration: Some(Configuration::TH1),
                 map: None
             },
             bonds: vec![
@@ -485,7 +485,7 @@ mod tests {
                 symbol: BracketSymbol::Element(Element::C),
                 hcount: Some(VirtualHydrogen::H1),
                 charge: None,
-                configuration: Some(Configuration::Clockwise),
+                configuration: Some(Configuration::TH2),
                 map: None
             },
             bonds: vec![

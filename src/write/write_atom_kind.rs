@@ -224,10 +224,8 @@ fn write_configuration(
     configuration: &Option<Configuration>, out: &mut String
 ) {
     match configuration {
-        Some(Configuration::Clockwise) => out.push_str("@@"),
-        Some(Configuration::Counterclockwise) => out.push('@'),
-        Some(Configuration::TH1) => out.push_str("@TH1"),
-        Some(Configuration::TH2) => out.push_str("@TH2"),
+        Some(Configuration::TH1) => out.push_str("@"),
+        Some(Configuration::TH2) => out.push_str("@@"),
         Some(Configuration::AL1) => out.push_str("@AL1"),
         Some(Configuration::AL2) => out.push_str("@AL2"),
         Some(Configuration::TB1) => out.push_str("@TB1"),
@@ -460,7 +458,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            configuration: Some(Configuration::Clockwise),
+            configuration: Some(Configuration::TH2),
             hcount: None,
             charge: None,
             map: None
@@ -477,7 +475,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: None,
             symbol: BracketSymbol::Star,
-            configuration: Some(Configuration::Counterclockwise),
+            configuration: Some(Configuration::TH1),
             hcount: None,
             charge: None,
             map: None
@@ -503,7 +501,7 @@ mod tests {
 
         write_atom_kind(&kind, &mut out);
 
-        assert_eq!(out, "[*@TH1]")
+        assert_eq!(out, "[*@]")
     }
 
     #[test]
@@ -681,7 +679,7 @@ mod tests {
         let kind = AtomKind::Bracket {
             isotope: Some(13.try_into().unwrap()),
             symbol: BracketSymbol::Element(Element::C),
-            configuration: Some(Configuration::Clockwise),
+            configuration: Some(Configuration::TH2),
             hcount: Some(VirtualHydrogen::H1),
             charge: Some(Charge::One),
             map: Some(42.try_into().unwrap())

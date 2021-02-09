@@ -16,7 +16,7 @@ pub fn read_configuration(
                 Some('@') => {
                     scanner.pop();
     
-                    Configuration::Clockwise
+                    Configuration::TH2
                 },
                 Some('A') => {
                     scanner.pop();
@@ -71,7 +71,7 @@ pub fn read_configuration(
                         _ => return Err(missing_character(scanner))
                     }
                 },
-                _ => Configuration::Counterclockwise
+                _ => Configuration::TH1
             }
         },
         _ => return Ok(None)
@@ -231,7 +231,7 @@ mod tests {
 
         assert_eq!(
             read_configuration(&mut scanner),
-            Ok(Some(Configuration::Counterclockwise))
+            Ok(Some(Configuration::TH1))
         )
     }
 
@@ -241,7 +241,7 @@ mod tests {
 
         assert_eq!(
             read_configuration(&mut scanner),
-            Ok(Some(Configuration::Clockwise))
+            Ok(Some(Configuration::TH2))
         )
     }
 

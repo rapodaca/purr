@@ -1,9 +1,7 @@
 /// Representation of a configurational template. Most applications
-/// will use only `Clockwise` and `Counterclockwise`.
+/// will use only `TH1` (counterclockwise) and `TH2` (clockwise).
 #[derive(Debug,PartialEq,Clone)]
 pub enum Configuration {
-    Clockwise,
-    Counterclockwise,
     AL1,
     AL2,
     OH1,
@@ -60,5 +58,5 @@ pub enum Configuration {
     TB19,
     TB20,
     TH1,
-    TH2,
+    TH2
 }

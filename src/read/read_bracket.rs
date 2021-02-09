@@ -215,7 +215,7 @@ mod tests {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Star,
-                configuration: Some(Configuration::Counterclockwise),
+                configuration: Some(Configuration::TH1),
                 hcount: None,
                 charge: None,
                 map: None

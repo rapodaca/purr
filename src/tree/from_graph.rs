@@ -90,12 +90,10 @@ fn invert(kind: &mut parts::AtomKind) {
         if let Some(p) = configuration {
             match hcount {
                 Some(hcount) => if !hcount.is_zero() {
-                    if p == &parts::Configuration::Clockwise {
-                        std::mem::swap(
-                            p, &mut parts::Configuration::Counterclockwise
-                        )
-                    } else if p == &parts::Configuration::Counterclockwise {
-                        std::mem::swap(p, &mut parts::Configuration::Clockwise)
+                    if p == &parts::Configuration::TH2 {
+                        std::mem::swap(p, &mut parts::Configuration::TH1)
+                    } else if p == &parts::Configuration::TH1 {
+                        std::mem::swap(p, &mut parts::Configuration::TH2)
                     }
                 },
                 None => ()
