@@ -2,7 +2,6 @@ mod error;
 mod atom;
 mod bond;
 mod from_tree;
-mod reconcile_bonds;
 
 pub use error::Error;
 pub use atom::Atom;
