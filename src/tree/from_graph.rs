@@ -83,13 +83,8 @@ fn write_root(
                 }
 
                 let hit = pool.hit(sid, bond.tid);
-                let kind = if hit.closes {
-                    bond.kind
-                } else {
-                    parts::BondKind::Elided
-                };
 
-                links.push(Unit::join(sid, kind, hit.rnum))
+                links.push(Unit::join(sid, bond.kind, hit.rnum))
             }
         }
     }
@@ -225,7 +220,7 @@ mod tests {
 
     #[test]
     fn p1() {
-        let graph = from_tree(read("*").unwrap().root).unwrap();
+        let graph = from_tree(read("*").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "*")
@@ -233,7 +228,7 @@ mod tests {
 
     #[test]
     fn methane() {
-        let graph = from_tree(read("C").unwrap().root).unwrap();
+        let graph = from_tree(read("C").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C")
@@ -241,7 +236,7 @@ mod tests {
 
     #[test]
     fn p1_p1() {
-        let graph = from_tree(read("*.*").unwrap().root).unwrap();
+        let graph = from_tree(read("*.*").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "*.*")
@@ -249,7 +244,7 @@ mod tests {
 
     #[test]
     fn methane_ammonia_hydrate() {
-        let graph = from_tree(read("C.N.O").unwrap().root).unwrap();
+        let graph = from_tree(read("C.N.O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C.N.O")
@@ -257,7 +252,7 @@ mod tests {
 
     #[test]
     fn methanol() {
-        let graph = from_tree(read("CO").unwrap().root).unwrap();
+        let graph = from_tree(read("CO").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "CO")
@@ -265,7 +260,7 @@ mod tests {
 
     #[test]
     fn propanol() {
-        let graph = from_tree(read("CCO").unwrap().root).unwrap();
+        let graph = from_tree(read("CCO").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "CCO")
@@ -273,7 +268,7 @@ mod tests {
 
     #[test]
     fn propanal_explicit_bonds() {
-        let graph = from_tree(read("C-C=O").unwrap().root).unwrap();
+        let graph = from_tree(read("C-C=O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-C=O")
@@ -281,7 +276,7 @@ mod tests {
 
     #[test]
     fn propanol_branched() {
-        let graph = from_tree(read("C(O)CC").unwrap().root).unwrap();
+        let graph = from_tree(read("C(O)CC").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(O)CC")
@@ -289,7 +284,7 @@ mod tests {
 
     #[test]
     fn trihalo_methane_s3() {
-        let graph = from_tree(read("C(F)(Cl)Br").unwrap().root).unwrap();
+        let graph = from_tree(read("C(F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(F)(Cl)Br")
@@ -297,7 +292,7 @@ mod tests {
 
     #[test]
     fn fluoroethanol() {
-        let graph = from_tree(read("C(CF)O").unwrap().root).unwrap();
+        let graph = from_tree(read("C(CF)O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C(CF)O")
@@ -305,7 +300,7 @@ mod tests {
 
     #[test]
     fn oxirane() {
-        let graph = from_tree(read("C1CO1").unwrap().root).unwrap();
+        let graph = from_tree(read("C1CO1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C1CO1")
@@ -313,7 +308,7 @@ mod tests {
 
     #[test]
     fn oxirane_left_single() {
-        let graph = from_tree(read("C-1CO1").unwrap().root).unwrap();
+        let graph = from_tree(read("C-1CO1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C-1CO1")
@@ -321,23 +316,23 @@ mod tests {
 
     #[test]
     fn oxirane_right_single() {
-        let graph = from_tree(read("C1CO-1").unwrap().root).unwrap();
+        let graph = from_tree(read("C1CO-1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C-1CO1")
+        assert_eq!(write(&tree), "C1CO-1")
     }
 
     #[test]
     fn oxirane_left_right_single() {
-        let graph = from_tree(read("C-1CO-1").unwrap().root).unwrap();
+        let graph = from_tree(read("C-1CO-1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C-1CO1")
+        assert_eq!(write(&tree), "C-1CO-1")
     }
 
     #[test]
     fn bicyclobutane() {
-        let graph = from_tree(read("C12CC1C2").unwrap().root).unwrap();
+        let graph = from_tree(read("C12CC1C2").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "C12CC2C1")
@@ -345,7 +340,7 @@ mod tests {
 
     #[test]
     fn tetrahalomethane_stereocentric() {
-        let graph = from_tree(read("[C@](F)(Cl)(Br)I").unwrap().root).unwrap();
+        let graph = from_tree(read("[C@](F)(Cl)(Br)I").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "[C@](F)(Cl)(Br)I")
@@ -353,7 +348,7 @@ mod tests {
 
     #[test]
     fn tetrahalomethane_non_stereocentric() {
-        let graph = from_tree(read("F[C@](Cl)(Br)I").unwrap().root).unwrap();
+        let graph = from_tree(read("F[C@](Cl)(Br)I").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "F[C@](Cl)(Br)I")
@@ -361,7 +356,7 @@ mod tests {
 
     #[test]
     fn trihalomethane_stereocentric() {
-        let graph = from_tree(read("[C@H](F)(Cl)Br").unwrap().root).unwrap();
+        let graph = from_tree(read("[C@H](F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "[C@H](F)(Cl)Br")
@@ -369,7 +364,7 @@ mod tests {
 
     #[test]
     fn trihalomethane_hydrate_stereocentric() {
-        let graph = from_tree(read("O.[C@H](F)(Cl)Br").unwrap().root).unwrap();
+        let graph = from_tree(read("O.[C@H](F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "O.[C@H](F)(Cl)Br")
@@ -377,7 +372,7 @@ mod tests {
 
     #[test]
     fn trihalomethane_non_stereocentric() {
-        let graph = from_tree(read("F[C@H](Cl)Br").unwrap().root).unwrap();
+        let graph = from_tree(read("F[C@H](Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(write(&tree), "F[C@H](Cl)Br")
