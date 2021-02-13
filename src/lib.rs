@@ -14,8 +14,6 @@ pub mod tree;
 pub mod graph;
 /// Reading SMILES strings.
 pub mod read;
-/// Writing SMILES strings.
-pub mod write;
 
 // https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790
 #[cfg(doctest)]

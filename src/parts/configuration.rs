@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Representation of a configurational template. Most applications
 /// will use only `TH1` (counterclockwise) and `TH2` (clockwise).
 #[derive(Debug,PartialEq,Clone)]
@@ -59,4 +61,68 @@ pub enum Configuration {
     TB20,
     TH1,
     TH2
+}
+
+impl fmt::Display for Configuration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            Configuration::TH1 => "@",
+            Configuration::TH2 => "@@",
+            Configuration::AL1 => "@",
+            Configuration::AL2 => "@@",
+            Configuration::TB1 => "@TB1",
+            Configuration::TB2 => "@TB2",
+            Configuration::TB3 => "@TB3",
+            Configuration::TB4 => "@TB4",
+            Configuration::TB5 => "@TB5",
+            Configuration::TB6 => "@TB6",
+            Configuration::TB7 => "@TB7",
+            Configuration::TB8 => "@TB8",
+            Configuration::TB9 => "@TB9",
+            Configuration::TB10 => "@TB10",
+            Configuration::TB11 => "@TB11",
+            Configuration::TB12 => "@TB12",
+            Configuration::TB13 => "@TB13",
+            Configuration::TB14 => "@TB14",
+            Configuration::TB15 => "@TB15",
+            Configuration::TB16 => "@TB16",
+            Configuration::TB17 => "@TB17",
+            Configuration::TB18 => "@TB18",
+            Configuration::TB19 => "@TB19",
+            Configuration::TB20 => "@TH1",
+            Configuration::OH1 => "@OH1",
+            Configuration::OH2 => "@OH2",
+            Configuration::OH3 => "@TH1",
+            Configuration::OH4 => "@OH4",
+            Configuration::OH5 => "@OH5",
+            Configuration::OH6 => "@OH6",
+            Configuration::OH7 => "@OH7",
+            Configuration::OH8 => "@OH8",
+            Configuration::OH9 => "@OH9",
+            Configuration::OH10 => "@OH10",
+            Configuration::OH11 => "@OH11",
+            Configuration::OH12 => "@OH12",
+            Configuration::OH13 => "@OH13",
+            Configuration::OH14 => "@OH6",
+            Configuration::OH15 => "@OH15",
+            Configuration::OH16 => "@OH16",
+            Configuration::OH17 => "@OH17",
+            Configuration::OH18 => "@OH18",
+            Configuration::OH19 => "@OH19",
+            Configuration::OH20 => "@OH20",
+            Configuration::OH21 => "@OH21",
+            Configuration::OH22 => "@OH22",
+            Configuration::OH23 => "@OH23",
+            Configuration::OH24 => "@OH24",
+            Configuration::OH25 => "@OH25",
+            Configuration::OH26 => "@OH26",
+            Configuration::OH27 => "@OH27",
+            Configuration::OH28 => "@OH28",
+            Configuration::OH29 => "@OH29",
+            Configuration::OH30 => "@OH30",
+            Configuration::SP1 => "@SP1",
+            Configuration::SP2 => "@SP2",
+            Configuration::SP3 => "@SP3"
+        })
+    }
 }

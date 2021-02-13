@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{
     Aliphatic, Aromatic, BracketSymbol, Configuration, Element, Charge,
     VirtualHydrogen, Number
@@ -106,3 +108,42 @@ static OXYGEN_TARGET: [u8; 1] = [ 2 ];
 static PHOSPHOROUS_TARGET: [u8; 2] = [ 3, 5 ];
 static SULFUR_TARGET: [u8; 3] = [ 2, 4, 6 ];
 static EMPTY_TARGET: [u8; 0] = [ ];
+
+impl fmt::Display for AtomKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AtomKind::Star => write!(f, "*"),
+            AtomKind::Aliphatic(aliphatic) => write!(f, "{}", aliphatic),
+            AtomKind::Aromatic(aromatic) => write!(f, "{}", aromatic),
+            AtomKind::Bracket {
+                isotope, symbol, hcount, configuration, charge, map
+            } => {
+                write!(f, "[")?;
+
+                if let Some(isotope) = isotope {
+                    write!(f, "{}", isotope)?
+                }
+
+                write!(f, "{}", symbol)?;
+                
+                if let Some(configuration) = configuration {
+                    write!(f, "{}", configuration)?
+                }
+
+                if let Some(hcount) = hcount {
+                    write!(f, "{}", hcount)?
+                }
+
+                if let Some(charge) = charge {
+                    write!(f, "{}", charge)?
+                }
+
+                if let Some(map) = map {
+                    write!(f, ":{}", map)?
+                }
+
+                write!(f, "]")
+            }
+        }
+    }
+}

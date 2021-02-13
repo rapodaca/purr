@@ -173,7 +173,8 @@ impl Unit {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use crate::write::write;
+    // use crate::write::write;
+    use crate::tree::Writer;
     use crate::read::read;
     use crate::graph::from_tree;
     use super::*;
@@ -223,7 +224,7 @@ mod tests {
         let graph = from_tree(read("*").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "*")
+        assert_eq!(Writer::write(&tree), "*")
     }
 
     #[test]
@@ -231,7 +232,7 @@ mod tests {
         let graph = from_tree(read("C").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C")
+        assert_eq!(Writer::write(&tree), "C")
     }
 
     #[test]
@@ -239,7 +240,7 @@ mod tests {
         let graph = from_tree(read("*.*").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "*.*")
+        assert_eq!(Writer::write(&tree), "*.*")
     }
 
     #[test]
@@ -247,7 +248,7 @@ mod tests {
         let graph = from_tree(read("C.N.O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C.N.O")
+        assert_eq!(Writer::write(&tree), "C.N.O")
     }
 
     #[test]
@@ -255,7 +256,7 @@ mod tests {
         let graph = from_tree(read("CO").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "CO")
+        assert_eq!(Writer::write(&tree), "CO")
     }
 
     #[test]
@@ -263,7 +264,7 @@ mod tests {
         let graph = from_tree(read("CCO").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "CCO")
+        assert_eq!(Writer::write(&tree), "CCO")
     }
 
     #[test]
@@ -271,7 +272,7 @@ mod tests {
         let graph = from_tree(read("C-C=O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C-C=O")
+        assert_eq!(Writer::write(&tree), "C-C=O")
     }
 
     #[test]
@@ -279,7 +280,7 @@ mod tests {
         let graph = from_tree(read("C(O)CC").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C(O)CC")
+        assert_eq!(Writer::write(&tree), "C(O)CC")
     }
 
     #[test]
@@ -287,7 +288,7 @@ mod tests {
         let graph = from_tree(read("C(F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C(F)(Cl)Br")
+        assert_eq!(Writer::write(&tree), "C(F)(Cl)Br")
     }
 
     #[test]
@@ -295,7 +296,7 @@ mod tests {
         let graph = from_tree(read("C(CF)O").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C(CF)O")
+        assert_eq!(Writer::write(&tree), "C(CF)O")
     }
 
     #[test]
@@ -303,7 +304,7 @@ mod tests {
         let graph = from_tree(read("C1CO1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C1CO1")
+        assert_eq!(Writer::write(&tree), "C1CO1")
     }
 
     #[test]
@@ -311,7 +312,7 @@ mod tests {
         let graph = from_tree(read("C-1CO1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C-1CO1")
+        assert_eq!(Writer::write(&tree), "C-1CO1")
     }
 
     #[test]
@@ -319,7 +320,7 @@ mod tests {
         let graph = from_tree(read("C1CO-1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C1CO-1")
+        assert_eq!(Writer::write(&tree), "C1CO-1")
     }
 
     #[test]
@@ -327,7 +328,7 @@ mod tests {
         let graph = from_tree(read("C-1CO-1").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C-1CO-1")
+        assert_eq!(Writer::write(&tree), "C-1CO-1")
     }
 
     #[test]
@@ -335,7 +336,7 @@ mod tests {
         let graph = from_tree(read("C12CC1C2").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "C12CC2C1")
+        assert_eq!(Writer::write(&tree), "C12CC2C1")
     }
 
     #[test]
@@ -343,7 +344,7 @@ mod tests {
         let graph = from_tree(read("[C@](F)(Cl)(Br)I").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "[C@](F)(Cl)(Br)I")
+        assert_eq!(Writer::write(&tree), "[C@](F)(Cl)(Br)I")
     }
 
     #[test]
@@ -351,7 +352,7 @@ mod tests {
         let graph = from_tree(read("F[C@](Cl)(Br)I").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "F[C@](Cl)(Br)I")
+        assert_eq!(Writer::write(&tree), "F[C@](Cl)(Br)I")
     }
 
     #[test]
@@ -359,7 +360,7 @@ mod tests {
         let graph = from_tree(read("[C@H](F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "[C@H](F)(Cl)Br")
+        assert_eq!(Writer::write(&tree), "[C@H](F)(Cl)Br")
     }
 
     #[test]
@@ -367,7 +368,7 @@ mod tests {
         let graph = from_tree(read("O.[C@H](F)(Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "O.[C@H](F)(Cl)Br")
+        assert_eq!(Writer::write(&tree), "O.[C@H](F)(Cl)Br")
     }
 
     #[test]
@@ -375,6 +376,6 @@ mod tests {
         let graph = from_tree(read("F[C@H](Cl)Br").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(write(&tree), "F[C@H](Cl)Br")
+        assert_eq!(Writer::write(&tree), "F[C@H](Cl)Br")
     }
 }

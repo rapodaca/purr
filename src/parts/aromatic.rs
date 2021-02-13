@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::Aliphatic;
 
 /// Atomic symbols that can be aromatic.
@@ -30,5 +32,18 @@ impl Into<Aliphatic> for &Aromatic {
             Aromatic::P => Aliphatic::P,
             Aromatic::S => Aliphatic::S
         }
+    }
+}
+
+impl fmt::Display for Aromatic {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::B => "b",
+            Self::C => "c",
+            Self::N => "n",
+            Self::O => "o",
+            Self::P => "p",
+            Self::S => "s"
+        })
     }
 }

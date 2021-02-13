@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Atomic symbols that can be aliphatic.
 #[derive(Debug,PartialEq)]
 pub enum Aliphatic {
@@ -20,5 +22,24 @@ impl Aliphatic {
             Self::At |
             Self::Ts => &[ 1 ]
         }
+    }
+}
+
+impl fmt::Display for Aliphatic {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            Self::B => "B",
+            Self::C => "C",
+            Self::N => "N",
+            Self::O => "O",
+            Self::S => "S",
+            Self::P => "P",
+            Self::F => "F",
+            Self::Cl => "Cl",
+            Self::Br => "Br",
+            Self::I => "I",
+            Self::At => "At",
+            Self::Ts => "Ts"
+        })
     }
 }

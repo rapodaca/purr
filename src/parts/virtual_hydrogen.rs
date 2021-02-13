@@ -1,3 +1,4 @@
+use std::fmt;
 use std::convert::Into;
 
 /// Represents the virtual hydrogen count on a bracket atom. See: [Hydrogen Suppression in SMILES](https://depth-first.com/articles/2020/06/08/hydrogen-suppression-in-smiles/).
@@ -36,5 +37,22 @@ impl Into<u8> for &VirtualHydrogen {
             VirtualHydrogen::H8 => 8,
             VirtualHydrogen::H9 => 9
         }
+    }
+}
+
+impl fmt::Display for VirtualHydrogen {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            VirtualHydrogen::H0 => "",
+            VirtualHydrogen::H1 => "H",
+            VirtualHydrogen::H2 => "H2",
+            VirtualHydrogen::H3 => "H3",
+            VirtualHydrogen::H4 => "H4",
+            VirtualHydrogen::H5 => "H5",
+            VirtualHydrogen::H6 => "H6",
+            VirtualHydrogen::H7 => "H7",
+            VirtualHydrogen::H8 => "H8",
+            VirtualHydrogen::H9 => "H9",
+        })
     }
 }

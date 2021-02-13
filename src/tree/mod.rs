@@ -5,6 +5,9 @@ mod from_graph;
 mod rnum;
 mod join_pool;
 mod error;
+mod writer;
+mod follower;
+mod walk;
 
 pub use atom::Atom;
 pub use link::Link;
@@ -12,3 +15,6 @@ pub use target::Target;
 pub use rnum::Rnum;
 pub use from_graph::from_graph;
 pub use error::Error;
+pub use writer::Writer;
+pub use follower::Follower;
+pub use walk::walk;

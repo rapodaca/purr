@@ -66,12 +66,12 @@ It's often helpful to represent a tree as a string for visual inspection.
 
 ```rust
 use purr::read::{ read, Error };
-use purr::write::write;
+use purr::tree::Writer;
 
 fn main() -> Result<(), Error> {
     let root = read("c1ccccc1")?.root;
 
-    assert_eq!(write(&root), "c1ccccc1");
+    assert_eq!(Writer::write(&root), "c1ccccc1");
 
     Ok(())
 }

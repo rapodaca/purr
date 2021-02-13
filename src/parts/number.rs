@@ -6,12 +6,6 @@ pub struct Number {
     value: u16
 }
 
-impl fmt::Display for Number {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
 impl TryFrom<u16> for Number {
     type Error = ();
 
@@ -38,5 +32,11 @@ impl TryInto<Number> for String {
             Ok(number) => Ok(Number { value: number}),
             Err(_) => Err(())
         }
+    }
+}
+
+impl fmt::Display for Number {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
     }
 }
