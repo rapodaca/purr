@@ -107,13 +107,13 @@ fn main() {
 Sometimes it's more convenient to work with an adjacency (or graph-like) representation. This can be accomplished through the `graph_from_tree` method.
 
 ```rust
-use purr::read::{ read, Error };
-use purr::graph::{ Atom, Bond, from_tree };
+use purr::read::{ read };
+use purr::graph::{ Atom, Bond, from_tree, Error };
 use purr::parts::{ AtomKind, Aliphatic, BondKind };
 
 fn main() -> Result<(), Error> {
-    let root = read("C=*")?.root;
-    let graph = from_tree(root);
+    let root = read("C=*").expect("read").root;
+    let graph = from_tree(root)?;
  
     assert_eq!(graph, vec![
         Atom {

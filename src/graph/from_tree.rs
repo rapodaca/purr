@@ -1,20 +1,20 @@
 use std::collections::HashMap;
 
 use crate::{ tree, parts };
-use super::{ Atom, Bond };
+use super::{ Atom, Bond, Error };
 
 /// Returns a graph-like (adjacency) representation from the corresponding
 /// tree. This is useful when analysis requires access to local atomic
 /// information.
 /// 
 /// ```
-/// use purr::read::{ read, Error };
-/// use purr::graph::{ Atom, Bond, from_tree };
+/// use purr::read::{ read };
+/// use purr::graph::{ Atom, Bond, from_tree, Error };
 /// use purr::parts::{ AtomKind, Aliphatic, BondKind };
 ///
 /// fn main() -> Result<(), Error> {
-///     let root = read("C=*")?.root;
-///     let graph = from_tree(root);
+///     let root = read("C=*").unwrap().root;
+///     let graph = from_tree(root)?;
 /// 
 ///     assert_eq!(graph, vec![
 ///         Atom {
@@ -37,7 +37,7 @@ use super::{ Atom, Bond };
 ///     Ok(())
 /// }
 /// ```
-pub fn from_tree(root: tree::Atom) -> Vec<Atom> {
+pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
     let mut stack = Vec::new();
     let mut out = Vec::new();
     let mut opens = HashMap::new();
@@ -54,19 +54,25 @@ pub fn from_tree(root: tree::Atom) -> Vec<Atom> {
 
     let mut result = Vec::new();
 
-    for node in out {
+    for (sid, node) in out.into_iter().enumerate() {
         result.push(Atom {
             kind: node.kind,
-            bonds: node.edges.into_iter().map(|edge| {
-                Bond::new(edge.kind, match edge.target {
-                    Target::Id(tid) => tid,
-                    Target::Rnum(_) => unimplemented!("TODO: unmatched RNUM")
-                })
-            }).collect::<Vec<_>>()
+            bonds: {
+                let mut bonds = Vec::new();
+
+                for edge in node.edges {
+                    bonds.push(match edge.target {
+                        Target::Id(tid) => Bond::new(edge.kind, tid),
+                        Target::Rnum(_) => return Err(Error::UnbalancedRnum(sid))
+                    })
+                }
+
+                bonds
+            }
         })
     }
 
-    result
+    Ok(result)
 }
 
 fn add_link(
@@ -214,34 +220,41 @@ mod tests {
     use super::*;
 
     #[test]
+    fn unbalanced_rnum() {
+        let root = read("*1**").unwrap().root;
+
+        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(0)))
+    }
+
+    #[test]
     fn p1() {
         let root = read("*").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn methane() {
         let root = read("C").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
                 bonds: vec![ ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn p2() {
         let root = read("**").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -254,14 +267,14 @@ mod tests {
                     Bond::new(parts::BondKind::Elided, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn p1_p1() {
         let root = read("*.*").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
@@ -270,14 +283,14 @@ mod tests {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn p3() {
         let root = read("***").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -297,14 +310,14 @@ mod tests {
                     Bond::new(BondKind::Elided, 1)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn p3_branched() {
         let root = read("*(*)*").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -324,14 +337,14 @@ mod tests {
                     Bond::new(BondKind::Elided, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn c3() {
         let root = read("*1**1").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -353,14 +366,14 @@ mod tests {
                     Bond::new(BondKind::Elided, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn c3_left_double() {
         let root = read("*=1**1").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -382,14 +395,14 @@ mod tests {
                     Bond::new(BondKind::Elided, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn c3_right_double() {
         let root = read("*1**=1").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -411,14 +424,14 @@ mod tests {
                     Bond::new(BondKind::Double, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn c3_left_up_right_down() {
         let root = read("*/1**\\1").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -440,14 +453,14 @@ mod tests {
                     Bond::new(BondKind::Down, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn p2_up() {
         let root = read("*/*").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -460,14 +473,14 @@ mod tests {
                     Bond::new(BondKind::Down, 0)
                 ]
             }
-        ])
+        ]))
     }
 
     #[test]
     fn atom_configuration_hydrogen_stereocentric() {
         let root = read("[C@H](F)(Cl)Br").unwrap().root;
 
-        assert_eq!(from_tree(root)[0], Atom {
+        assert_eq!(from_tree(root).unwrap()[0], Atom {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
@@ -488,7 +501,7 @@ mod tests {
     fn atom_configuration_hydrogen_nonstereocentric() {
         let root = read("C[C@H](F)Cl").unwrap().root;
 
-        assert_eq!(from_tree(root)[1], Atom {
+        assert_eq!(from_tree(root).unwrap()[1], Atom {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
@@ -509,7 +522,7 @@ mod tests {
     fn bicyclo_220() {
         let root = read("*12***1**2").unwrap().root;
 
-        assert_eq!(from_tree(root), vec![
+        assert_eq!(from_tree(root), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -554,6 +567,6 @@ mod tests {
                     Bond::new(BondKind::Elided, 0)
                 ]
             }
-        ])
+        ]))
     }
 }
