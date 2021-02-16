@@ -1,5 +1,7 @@
 use std::{ fs, path::PathBuf };
 
+use pretty_assertions::assert_eq;
+
 use purr::read::read;
 use purr::graph::from_tree;
 use purr::tree::{ from_graph, Writer };

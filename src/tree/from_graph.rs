@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{ graph, parts };
-use super::{ Atom, join_pool::JoinPool, Link, Target, Rnum, Error };
+use super::{ Atom, join_pool::JoinPool, Link, Target, Error };
 
 /// Returns the root atom in a tree corresponding to the input graph.
 pub fn from_graph(graph: Vec<graph::Atom>) -> Result<Atom, Error> {
     let order = graph.len();
     let mut atoms = graph.into_iter().enumerate().collect::<HashMap<_,_>>();
-    let mut links = Vec::new();
+    let mut units = Vec::new();
     let mut hub = HashMap::new();
-    let mut pool = JoinPool::new();
     let mut last = None;
 
     for id in 0..atoms.len() {
@@ -19,15 +18,23 @@ pub fn from_graph(graph: Vec<graph::Atom>) -> Result<Atom, Error> {
         };
 
         if let Some(last) = last {
-            links.push(Unit::split(last, id))
+            units.push(Unit::split(last, id))
         }
         
-        write_root(id, atom, &mut atoms, &mut links, &mut hub, &mut pool, order)?;
+        write_root(id, atom, &mut atoms, &mut units, &mut hub, order)?;
         last.replace(id);
     }
 
+    build_tree(units, hub)
+}
+
+fn build_tree(
+    mut links: Vec<Unit>, mut hub: HashMap<usize, Atom>
+) -> Result<Atom, Error> {
+    let mut pool = JoinPool::new();
+
     while let Some(unit) = links.pop() {
-        unit.add_link(&mut hub)
+        unit.add_link(&mut hub, &mut pool)
     }
 
     Ok(hub.remove(&0).expect("result"))
@@ -37,9 +44,8 @@ fn write_root(
     pid: usize,
     parent: graph::Atom,
     atoms: &mut HashMap<usize, graph::Atom>,
-    links: &mut Vec<Unit>,
+    units: &mut Vec<Unit>,
     hub: &mut HashMap<usize, Atom>,
-    pool: &mut JoinPool,
     order: usize
 ) -> Result<(), Error> {
     let mut stack = Vec::new();
@@ -75,16 +81,14 @@ fn write_root(
 
                 invert(&mut next.kind);
                 hub.insert(bond.tid, next);
-                links.push(Unit::bond(sid, bond.kind, bond.tid));
+                units.push(Unit::bond(sid, bond.kind, bond.tid));
             },
             None => {
                 if bond.tid >= order {
                     return Err(Error::TargetMismatch(sid, bond.tid))
                 }
 
-                let hit = pool.hit(sid, bond.tid);
-
-                links.push(Unit::join(sid, bond.kind, hit.rnum))
+                units.push(Unit::join(sid, bond.kind, bond.tid))
             }
         }
     }
@@ -125,13 +129,13 @@ fn bond_kinds_match(left: &parts::BondKind, right: &parts::BondKind) -> bool {
 enum Unit {
     Bond {
         sid: usize,
-        tid: usize,
-        kind: parts::BondKind
+        kind: parts::BondKind,
+        tid: usize
     },
     Join {
         sid: usize,
-        rnum: Rnum,
-        kind: parts::BondKind
+        kind: parts::BondKind,
+        tid: usize
     },
     Split {
         sid: usize,
@@ -144,23 +148,23 @@ impl Unit {
         Self::Bond { sid, kind, tid }
     }
 
-    fn join(sid: usize, kind: parts::BondKind, rnum: Rnum) -> Self {
-        Self::Join { sid, kind, rnum }
+    fn join(sid: usize, kind: parts::BondKind, tid: usize) -> Self {
+        Self::Join { sid, kind, tid }
     }
 
     fn split(sid: usize, tid: usize) -> Self {
         Self::Split { sid, tid }
     }
 
-    fn add_link(self, hub: &mut HashMap<usize, Atom>) {
+    fn add_link(self, hub: &mut HashMap<usize, Atom>, pool: &mut JoinPool) {
         let (sid, link) = match self {
             Unit::Bond { sid, tid, kind } => (sid, Link::Bond {
                 kind,
                 target: Target::Atom(hub.remove(&tid).expect("target"))
             }),
-            Unit::Join { sid, kind, rnum } => (sid, Link::Bond {
+            Unit::Join { sid, kind, tid } => (sid, Link::Bond {
                 kind,
-                target: Target::Join(rnum)
+                target: Target::Join(pool.hit(sid, tid).rnum)
             }),
             Unit::Split { sid, tid } =>
             (sid, Link::Split(hub.remove(&tid).expect("target")))
@@ -173,7 +177,6 @@ impl Unit {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    // use crate::write::write;
     use crate::tree::Writer;
     use crate::read::read;
     use crate::graph::from_tree;
@@ -336,7 +339,7 @@ mod tests {
         let graph = from_tree(read("C12CC1C2").unwrap().root);
         let tree = from_graph(graph).unwrap();
 
-        assert_eq!(Writer::write(&tree), "C12CC2C1")
+        assert_eq!(Writer::write(&tree), "C12CC1C2")
     }
 
     #[test]

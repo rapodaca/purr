@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 
 use crate::{ tree, parts };
 use super::{ Atom, Bond };
@@ -41,27 +40,41 @@ use super::{ Atom, Bond };
 pub fn from_tree(root: tree::Atom) -> Vec<Atom> {
     let mut stack = Vec::new();
     let mut out = Vec::new();
-    let mut opens: HashMap<tree::Rnum, Open> = HashMap::new();
+    let mut opens = HashMap::new();
 
-    out.push(Atom::new(root.kind));
+    out.push(Node::new(root.kind));
 
     for link in root.links.into_iter().rev() {
         stack.push((0, link))
     }
 
     while let Some((sid, link)) = stack.pop() {
-        add_link(sid, link, &mut opens, &mut stack, &mut out)
+        add_link(sid, link, &mut stack, &mut opens, &mut out)
     }
 
-    out
+    let mut result = Vec::new();
+
+    for node in out {
+        result.push(Atom {
+            kind: node.kind,
+            bonds: node.edges.into_iter().map(|edge| {
+                Bond::new(edge.kind, match edge.target {
+                    Target::Id(tid) => tid,
+                    Target::Rnum(_) => unimplemented!("TODO: unmatched RNUM")
+                })
+            }).collect::<Vec<_>>()
+        })
+    }
+
+    result
 }
 
 fn add_link(
     sid: usize,
     link: tree::Link,
-    opens: &mut HashMap<tree::Rnum, Open>,
     stack: &mut Vec<(usize, tree::Link)>,
-    out: &mut Vec<Atom>
+    opens: &mut HashMap<tree::Rnum, usize>,
+    out: &mut Vec<Node>
 ) {
     let links = match link {
         tree::Link::Bond { kind: bond_kind, target } => {
@@ -79,7 +92,7 @@ fn add_link(
             }
         },
         tree::Link::Split(target) => {
-            out.push(Atom::new(target.kind));
+            out.push(Node::new(target.kind));
 
             target.links
         }
@@ -92,52 +105,21 @@ fn add_link(
     }
 }
 
-fn create_atom(
-    mut kind: parts::AtomKind,
-    input: &parts::BondKind,
-    tid: usize
-) -> Atom {
-    let bond = Bond { kind: input.reverse(), tid };
-
-    if let parts::AtomKind::Bracket { configuration, hcount, .. } = &mut kind {
-        if let Some(configuration) = configuration {
-            match hcount {
-                Some(hcount) => if !hcount.is_zero() {
-                    if configuration == &parts::Configuration::TH2 {
-                        std::mem::swap(
-                            configuration, &mut parts::Configuration::TH1
-                        )
-                    } else if configuration == &parts::Configuration::TH1 {
-                        std::mem::swap(
-                            configuration, &mut parts::Configuration::TH2
-                        )
-                    }
-                },
-                None => ()
-            }
-        }
-    }
-
-    let result = Atom { kind, bonds: vec![ bond ] };
-
-    result
-}
-
 fn extend(
     sid: usize,
     atom: parts::AtomKind,
     input: parts::BondKind,
-    out: &mut Vec<Atom>,
+    out: &mut Vec<Node>,
 ) {
     let tid = out.len();
 
-    out.push(create_atom(atom, &input, sid));
+    out.push(Node::from(atom, &input, sid));
 
     let source = &mut out[sid];
 
-    source.bonds.push(Bond {
+    source.edges.push(Edge {
         kind: input,
-        tid: tid
+        target: Target::Id(tid)
     });
 }
 
@@ -145,32 +127,80 @@ fn join(
     sid: usize,
     bond_kind: parts::BondKind,
     rnum: tree::Rnum,
-    opens: &mut HashMap<tree::Rnum, Open>,
-    out: &mut Vec<Atom>
+    opens: &mut HashMap<tree::Rnum, usize>,
+    out: &mut Vec<Node>
 ) {
-    match opens.entry(rnum) {
-        Entry::Occupied(occupied) => {
-            let open = occupied.remove();
-            let forward = Bond::new(bond_kind, open.sid);
-            let reverse = Bond::new(open.kind, sid);
+    match opens.remove_entry(&rnum) {
+        Some((rnum, tid)) => {
+            out[sid].edges.push(Edge { kind: bond_kind, target: Target::Id(tid) });
+            
+            let edge = out[tid].edges.iter_mut().find(|edge| {
+                if let Target::Rnum(test) = &edge.target {
+                    test == &rnum
+                } else {
+                    false
+                }
+            }).expect("edge for rnum");
 
-            out[sid].bonds.push(forward);
-            out[open.sid].bonds.insert(open.index, reverse);
+            std::mem::swap(&mut edge.target, &mut Target::Id(sid))
         },
-        Entry::Vacant(vacant) => {
-            vacant.insert(Open {
-                sid: sid,
-                kind: bond_kind,
-                index: out[sid].bonds.len()
-            });
+        None => {
+            opens.insert(rnum.clone(), sid);
+            out[sid].edges.push(Edge { kind: bond_kind, target: Target::Rnum(rnum) })
         }
     }
 }
 
-struct Open {
-    sid: usize,
-    index: usize,
-    kind: parts::BondKind
+struct Node {
+    kind: parts::AtomKind,
+    edges: Vec<Edge>
+}
+
+impl Node {
+    fn new(kind: parts::AtomKind) -> Self {
+        Self {
+            kind,
+            edges: vec![ ]
+        }
+    }
+
+    fn from(mut kind: parts::AtomKind, input: &parts::BondKind, tid: usize) -> Self {
+        let bond = Edge { kind: input.reverse(), target: Target::Id(tid) };
+
+        if let parts::AtomKind::Bracket { configuration, hcount, .. } = &mut kind {
+            if let Some(configuration) = configuration {
+                match hcount {
+                    Some(hcount) => if !hcount.is_zero() {
+                        if configuration == &parts::Configuration::TH2 {
+                            std::mem::swap(
+                                configuration, &mut parts::Configuration::TH1
+                            )
+                        } else if configuration == &parts::Configuration::TH1 {
+                            std::mem::swap(
+                                configuration, &mut parts::Configuration::TH2
+                            )
+                        }
+                    },
+                    None => ()
+                }
+            }
+        }
+
+        Self {
+            kind,
+            edges: vec![ bond ]
+        }
+    }
+}
+
+struct Edge {
+    kind: parts::BondKind,
+    target: Target
+}
+
+enum Target {
+    Id(usize),
+    Rnum(tree::Rnum)
 }
 
 #[cfg(test)]
@@ -473,5 +503,57 @@ mod tests {
                 Bond::new(BondKind::Elided, 3)
             ]
         })
+    }
+
+    #[test]
+    fn bicyclo_220() {
+        let root = read("*12***1**2").unwrap().root;
+
+        assert_eq!(from_tree(root), vec![
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 3),
+                    Bond::new(BondKind::Elided, 5),
+                    Bond::new(BondKind::Elided, 1)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 0),
+                    Bond::new(BondKind::Elided, 2)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 1),
+                    Bond::new(BondKind::Elided, 3)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 2),
+                    Bond::new(BondKind::Elided, 0),
+                    Bond::new(BondKind::Elided, 4)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 3),
+                    Bond::new(BondKind::Elided, 5)
+                ]
+            },
+            Atom {
+                kind: AtomKind::Star,
+                bonds: vec![
+                    Bond::new(BondKind::Elided, 4),
+                    Bond::new(BondKind::Elided, 0)
+                ]
+            }
+        ])
     }
 }

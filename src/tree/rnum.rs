@@ -1,7 +1,7 @@
 use std::fmt;
 use std::convert::TryFrom;
 
-#[derive(Debug,PartialEq,Eq,Hash)]
+#[derive(Debug,PartialEq,Eq,Hash,Clone)]
 pub enum Rnum {
     R0,
     R1,
