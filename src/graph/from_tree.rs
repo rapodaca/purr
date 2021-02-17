@@ -13,7 +13,7 @@ use super::{ Atom, Bond, Error };
 /// use purr::parts::{ AtomKind, Aliphatic, BondKind };
 ///
 /// fn main() -> Result<(), Error> {
-///     let root = read("C=*").unwrap().root;
+///     let root = read("C=*", None).unwrap();
 ///     let graph = from_tree(root)?;
 /// 
 ///     assert_eq!(graph, vec![
@@ -221,14 +221,14 @@ mod tests {
 
     #[test]
     fn unbalanced_rnum() {
-        let root = read("*1**").unwrap().root;
+        let root = read("*1**", None).unwrap();
 
         assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(0)))
     }
 
     #[test]
     fn p1() {
-        let root = read("*").unwrap().root;
+        let root = read("*", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn methane() {
-        let root = read("C").unwrap().root;
+        let root = read("C", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -252,7 +252,7 @@ mod tests {
 
     #[test]
     fn p2() {
-        let root = read("**").unwrap().root;
+        let root = read("**", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn p1_p1() {
-        let root = read("*.*").unwrap().root;
+        let root = read("*.*", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn p3() {
-        let root = read("***").unwrap().root;
+        let root = read("***", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn p3_branched() {
-        let root = read("*(*)*").unwrap().root;
+        let root = read("*(*)*", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn c3() {
-        let root = read("*1**1").unwrap().root;
+        let root = read("*1**1", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -371,7 +371,7 @@ mod tests {
 
     #[test]
     fn c3_left_double() {
-        let root = read("*=1**1").unwrap().root;
+        let root = read("*=1**1", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -400,7 +400,7 @@ mod tests {
 
     #[test]
     fn c3_right_double() {
-        let root = read("*1**=1").unwrap().root;
+        let root = read("*1**=1", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -429,7 +429,7 @@ mod tests {
 
     #[test]
     fn c3_left_up_right_down() {
-        let root = read("*/1**\\1").unwrap().root;
+        let root = read("*/1**\\1", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -458,7 +458,7 @@ mod tests {
 
     #[test]
     fn p2_up() {
-        let root = read("*/*").unwrap().root;
+        let root = read("*/*", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {
@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn atom_configuration_hydrogen_stereocentric() {
-        let root = read("[C@H](F)(Cl)Br").unwrap().root;
+        let root = read("[C@H](F)(Cl)Br", None).unwrap();
 
         assert_eq!(from_tree(root).unwrap()[0], Atom {
             kind: AtomKind::Bracket {
@@ -499,7 +499,7 @@ mod tests {
 
     #[test]
     fn atom_configuration_hydrogen_nonstereocentric() {
-        let root = read("C[C@H](F)Cl").unwrap().root;
+        let root = read("C[C@H](F)Cl", None).unwrap();
 
         assert_eq!(from_tree(root).unwrap()[1], Atom {
             kind: AtomKind::Bracket {
@@ -520,7 +520,7 @@ mod tests {
 
     #[test]
     fn bicyclo_220() {
-        let root = read("*12***1**2").unwrap().root;
+        let root = read("*12***1**2", None).unwrap();
 
         assert_eq!(from_tree(root), Ok(vec![
             Atom {

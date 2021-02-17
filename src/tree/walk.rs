@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn p1() {
-        let tree = read("*").unwrap().root;
+        let tree = read("*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn p2() {
-        let tree = read("**").unwrap().root;
+        let tree = read("**", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn p1_p1() {
-        let tree = read("*.*").unwrap().root;
+        let tree = read("*.*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn p3() {
-        let tree = read("*-*=*").unwrap().root;
+        let tree = read("*-*=*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn p3_branched() {
-        let tree = read("*(-*)=*").unwrap().root;
+        let tree = read("*(-*)=*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn c3() {
-        let tree = read("*-1**-1").unwrap().root;
+        let tree = read("*-1**-1", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn p4_branched() {
-        let tree = read("*(-**)=*").unwrap().root;
+        let tree = read("*(-**)=*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn butterfly() {
-        let tree = read("*12**2*1").unwrap().root;
+        let tree = read("*12**2*1", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn nested_branch() {
-        let tree = read("*(*(-*)*)=*").unwrap().root;
+        let tree = read("*(*(-*)*)=*", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn caffeine() {
-        let tree = read("CN1C=NC2=C1C(=O)N(C(=O)N2C)C").unwrap().root;
+        let tree = read("CN1C=NC2=C1C(=O)N(C(=O)N2C)C", None).unwrap();
         let mut writer = Writer::new();
 
         walk(&tree, &mut writer);

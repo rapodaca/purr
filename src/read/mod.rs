@@ -8,9 +8,9 @@ mod read_bracket;
 mod read_organic;
 mod read_configuration;
 mod read;
-mod reading;
 mod scanner;
+mod trace;
 
 pub use read::read;
-pub use reading::Reading;
 pub use error::Error;
+pub use trace::Trace;

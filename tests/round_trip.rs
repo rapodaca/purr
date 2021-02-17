@@ -16,7 +16,7 @@ fn round_trip() {
     let entries = file.split("\n").collect::<Vec<_>>();
 
     for entry in entries {
-        let graph = from_tree(read(entry).unwrap().root).unwrap();
+        let graph = from_tree(read(entry, None).unwrap()).unwrap();
         let tree = from_graph(graph).unwrap();
 
         assert_eq!(Writer::write(&tree), entry)
