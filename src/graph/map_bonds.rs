@@ -80,7 +80,7 @@ impl tree::Follower for Mapper {
 
         match self.joins.entry(rnum.clone()) {
             Entry::Occupied(occupied) => {
-                let Join { sid: tid, bid, rid } = occupied.remove();
+                let Join { sid: tid, bid, rid: _ } = occupied.remove();
 
                 self.map.insert((sid, tid), bid);
                 self.map.insert((tid, sid), bid);
