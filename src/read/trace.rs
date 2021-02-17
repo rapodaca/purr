@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-/// A traced used with `read`. The `atom`, `bonds`, and `rnums` attributes
+/// Used with `read`. The `atom`, `bonds`, and `rnums` attributes
 /// map the corresponding ordered element id to a cursor or range. For
 /// example, access the first atom cursor range with
 /// `Trace.atoms[0]`, the second bond cursor with `Trace.bonds[1]` the
