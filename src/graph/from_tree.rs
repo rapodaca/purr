@@ -39,121 +39,141 @@ use super::{ Atom, Bond, Error };
 /// ```
 pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
     let mut stack = Vec::new();
-    let mut out = Vec::new();
-    let mut opens = HashMap::new();
+    let mut builder = GraphBuilder {
+        opens: HashMap::new(),
+        out: Vec::new(),
+        rid: 0
+    };
 
-    out.push(Node::new(root.kind));
+    builder.add_root(root.kind);
 
     for link in root.links.into_iter().rev() {
         stack.push((0, link))
     }
 
     while let Some((sid, link)) = stack.pop() {
-        add_link(sid, link, &mut stack, &mut opens, &mut out)
+        add_link(sid, link, &mut stack, &mut builder)
     }
 
-    let mut result = Vec::new();
-
-    for (sid, node) in out.into_iter().enumerate() {
-        result.push(Atom {
-            kind: node.kind,
-            bonds: {
-                let mut bonds = Vec::new();
-
-                for edge in node.edges {
-                    bonds.push(match edge.target {
-                        Target::Id(tid) => Bond::new(edge.kind, tid),
-                        Target::Rnum(_) => return Err(Error::UnbalancedRnum(sid))
-                    })
-                }
-
-                bonds
-            }
-        })
-    }
-
-    Ok(result)
+    builder.build()
 }
 
 fn add_link(
     sid: usize,
     link: tree::Link,
     stack: &mut Vec<(usize, tree::Link)>,
-    opens: &mut HashMap<tree::Rnum, usize>,
-    out: &mut Vec<Node>
+    builder: &mut GraphBuilder
 ) {
     let links = match link {
-        tree::Link::Bond { kind: bond_kind, target } => {
-            match target {
-                tree::Target::Atom(target) => {
-                    extend(sid, target.kind, bond_kind, out);
+        tree::Link::Bond { kind: bond_kind, target } => match target {
+            tree::Target::Atom(target) => {
+                builder.extend(sid, bond_kind, target.kind);
 
-                    target.links
-                },
-                tree::Target::Join(rnum) => {
-                    join(sid, bond_kind, rnum, opens, out);
-                    
-                    return
-                }
+                target.links
+            },
+            tree::Target::Join(rnum) => {
+                builder.join(sid, bond_kind, rnum);
+                
+                return
             }
         },
         tree::Link::Split(target) => {
-            out.push(Node::new(target.kind));
+            builder.add_root(target.kind);
 
             target.links
         }
     };
 
-    let tid = out.len() - 1;
+    let tid = builder.id();
 
     for link in links.into_iter().rev() {
         stack.push((tid, link))
     }
 }
 
-fn extend(
-    sid: usize,
-    atom: parts::AtomKind,
-    input: parts::BondKind,
-    out: &mut Vec<Node>,
-) {
-    let tid = out.len();
-
-    out.push(Node::from(atom, &input, sid));
-
-    let source = &mut out[sid];
-
-    source.edges.push(Edge {
-        kind: input,
-        target: Target::Id(tid)
-    });
+struct GraphBuilder {
+    opens: HashMap<tree::Rnum, usize>,
+    out: Vec<Node>,
+    rid: usize
 }
 
-fn join(
-    sid: usize,
-    bond_kind: parts::BondKind,
-    rnum: tree::Rnum,
-    opens: &mut HashMap<tree::Rnum, usize>,
-    out: &mut Vec<Node>
-) {
-    match opens.remove_entry(&rnum) {
-        Some((rnum, tid)) => {
-            out[sid].edges.push(Edge { kind: bond_kind, target: Target::Id(tid) });
-            
-            let edge = out[tid].edges.iter_mut().find(|edge| {
-                if let Target::Rnum(test) = &edge.target {
-                    test == &rnum
-                } else {
-                    false
-                }
-            }).expect("edge for rnum");
+impl GraphBuilder {
+    fn add_root(&mut self, kind: parts::AtomKind) {
+        self.out.push(Node::new(kind))
+    }
 
-            std::mem::swap(&mut edge.target, &mut Target::Id(sid))
-        },
-        None => {
-            opens.insert(rnum.clone(), sid);
-            out[sid].edges.push(Edge { kind: bond_kind, target: Target::Rnum(rnum) })
+    fn extend(
+        &mut self, sid: usize, input: parts::BondKind, atom: parts::AtomKind
+    ) {
+        let tid = self.out.len();
+
+        self.out.push(Node::from(atom, &input, sid));
+    
+        let source = &mut self.out[sid];
+    
+        source.edges.push(Edge {
+            kind: input,
+            target: Target::Id(tid)
+        });
+    }
+
+    fn add_edge(
+        &mut self, sid: usize, kind: parts::BondKind, target: Target
+    ) {
+        self.out[sid].edges.push(Edge::new(kind, target))
+    }
+
+    fn join(
+        &mut self, sid: usize, bond_kind: parts::BondKind, rnum: tree::Rnum
+    ) {
+        match self.opens.remove_entry(&rnum) {
+            Some((rnum, tid)) => {
+                self.add_edge(sid, bond_kind, Target::Id(tid));
+                
+                let edge = self.out[tid].edges.iter_mut().find(|edge| {
+                    if let Target::Rnum(_, test) = &edge.target {
+                        test == &rnum
+                    } else {
+                        false
+                    }
+                }).expect("edge for rnum");
+    
+                std::mem::swap(&mut edge.target, &mut Target::Id(sid))
+            },
+            None => {
+                self.opens.insert(rnum.clone(), sid);
+                self.add_edge(sid, bond_kind, Target::Rnum(self.rid, rnum))
+            }
         }
+    
+        self.rid += 1
+    }
+
+    fn id(&self) -> usize {
+        self.out.len() - 1
+    }
+
+    fn build(self) -> Result<Vec<Atom>, Error> {
+        let mut result = Vec::new();
+
+        for node in self.out {
+            let mut bonds = Vec::new();
+
+            for edge in node.edges {
+                match edge.target {
+                    Target::Id(tid) => bonds.push(Bond::new(edge.kind, tid)),
+                    Target::Rnum(rid, _) =>
+                        return Err(Error::UnbalancedRnum(rid))
+                }
+            }
+
+            result.push(Atom {
+                kind: node.kind,
+                bonds
+            })
+        }
+    
+        Ok(result)
     }
 }
 
@@ -170,10 +190,14 @@ impl Node {
         }
     }
 
-    fn from(mut kind: parts::AtomKind, input: &parts::BondKind, tid: usize) -> Self {
+    fn from(
+        mut kind: parts::AtomKind, input: &parts::BondKind, tid: usize
+    ) -> Self {
         let bond = Edge { kind: input.reverse(), target: Target::Id(tid) };
 
-        if let parts::AtomKind::Bracket { configuration, hcount, .. } = &mut kind {
+        if let parts::AtomKind::Bracket {
+            configuration, hcount, ..
+        } = &mut kind {
             if let Some(configuration) = configuration {
                 match hcount {
                     Some(hcount) => if !hcount.is_zero() {
@@ -204,9 +228,18 @@ struct Edge {
     target: Target
 }
 
+impl Edge {
+    fn new(kind: parts::BondKind, target: Target) -> Self {
+        Self {
+            kind,
+            target
+        }
+    }
+}
+
 enum Target {
     Id(usize),
-    Rnum(tree::Rnum)
+    Rnum(usize, tree::Rnum)
 }
 
 #[cfg(test)]
@@ -220,10 +253,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn unbalanced_rnum() {
-        let root = read("*1**", None).unwrap();
+    fn unbalanced_rnum_single() {
+        let root = read("*1", None).unwrap();
 
         assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(0)))
+    }
+
+    #[test]
+    fn unbalanced_rnum_first() {
+        let root = read("*1**1*2**3**", None).unwrap();
+
+        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(2)))
+    }
+
+    #[test]
+    fn unbalanced_rnum_last() {
+        let root = read("**1**1*2**", None).unwrap();
+
+        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(2)))
     }
 
     #[test]
