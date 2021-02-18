@@ -166,9 +166,9 @@ fn main() -> Result<(), read::Error> {
 
     assert_eq!(bond_0_5_cursor, 1); // bond(0, 5) @ cursor(1), type elided
 
-    let atom_1 = tree_trace.atoms[2].clone(); // atom(2) @ cursor(3..8)
+    let atom_2 = tree_trace.atoms[2].clone(); // atom(2) @ cursor(3..8)
 
-    assert_eq!(atom_1, 3..8);
+    assert_eq!(atom_2, 3..8);
 
     Ok(())
 }
