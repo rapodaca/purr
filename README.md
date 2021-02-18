@@ -118,7 +118,7 @@ use purr::parts::{ AtomKind, Aliphatic, BondKind };
 
 fn main() -> Result<(), Error> {
     let root = read("C=*", None).expect("read");
-    let graph = from_tree(root)?;
+    let graph = from_tree(root, None)?;
  
     assert_eq!(graph, vec![
         Atom {

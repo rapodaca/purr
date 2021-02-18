@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{ tree, parts };
-use super::{ Atom, Bond, Error };
+use super::{ Atom, Bond, Trace, Error };
 
 /// Returns a graph-like (adjacency) representation from the corresponding
 /// tree. This is useful when analysis requires access to local atomic
@@ -14,7 +14,7 @@ use super::{ Atom, Bond, Error };
 ///
 /// fn main() -> Result<(), Error> {
 ///     let root = read("C=*", None).unwrap();
-///     let graph = from_tree(root)?;
+///     let graph = from_tree(root, None)?;
 /// 
 ///     assert_eq!(graph, vec![
 ///         Atom {
@@ -37,12 +37,15 @@ use super::{ Atom, Bond, Error };
 ///     Ok(())
 /// }
 /// ```
-pub fn from_tree(root: tree::Atom) -> Result<Vec<Atom>, Error> {
+pub fn from_tree(
+    root: tree::Atom, trace: Option<&mut Trace>
+) -> Result<Vec<Atom>, Error> {
     let mut stack = Vec::new();
     let mut builder = GraphBuilder {
         opens: HashMap::new(),
         out: Vec::new(),
-        rid: 0
+        rid: 0,
+        trace
     };
 
     builder.add_root(root.kind);
@@ -91,13 +94,14 @@ fn add_link(
     }
 }
 
-struct GraphBuilder {
+struct GraphBuilder<'a> {
     opens: HashMap<tree::Rnum, usize>,
     out: Vec<Node>,
+    trace: Option<&'a mut Trace>,
     rid: usize
 }
 
-impl GraphBuilder {
+impl<'a> GraphBuilder<'a> {
     fn add_root(&mut self, kind: parts::AtomKind) {
         self.out.push(Node::new(kind))
     }
@@ -108,30 +112,26 @@ impl GraphBuilder {
         let tid = self.out.len();
 
         self.out.push(Node::from(atom, &input, sid));
-    
-        let source = &mut self.out[sid];
-    
-        source.edges.push(Edge {
-            kind: input,
-            target: Target::Id(tid)
-        });
-    }
+        self.out[sid].edges.push(Edge::new(input, Target::Id(tid)));
 
-    fn add_edge(
-        &mut self, sid: usize, kind: parts::BondKind, target: Target
-    ) {
-        self.out[sid].edges.push(Edge::new(kind, target))
+        if let Some(trace) = self.trace.as_mut() {
+            trace.bond(sid, tid)
+        }
     }
 
     fn join(
         &mut self, sid: usize, bond_kind: parts::BondKind, rnum: tree::Rnum
     ) {
+        if let Some(trace) = self.trace.as_mut() {
+            trace.join(sid, rnum.clone())
+        }
+
         match self.opens.remove_entry(&rnum) {
             Some((rnum, tid)) => {
-                self.add_edge(sid, bond_kind, Target::Id(tid));
+                self.out[sid].edges.push(Edge::new(bond_kind, Target::Id(tid)));
                 
                 let edge = self.out[tid].edges.iter_mut().find(|edge| {
-                    if let Target::Rnum(_, test) = &edge.target {
+                    if let Target::Rnum(_, _, test) = &edge.target {
                         test == &rnum
                     } else {
                         false
@@ -142,7 +142,9 @@ impl GraphBuilder {
             },
             None => {
                 self.opens.insert(rnum.clone(), sid);
-                self.add_edge(sid, bond_kind, Target::Rnum(self.rid, rnum))
+                self.out[sid].edges.push(
+                    Edge::new(bond_kind, Target::Rnum(self.rid, sid, rnum))
+                )
             }
         }
     
@@ -162,7 +164,7 @@ impl GraphBuilder {
             for edge in node.edges {
                 match edge.target {
                     Target::Id(tid) => bonds.push(Bond::new(edge.kind, tid)),
-                    Target::Rnum(rid, _) =>
+                    Target::Rnum(rid, _, _) =>
                         return Err(Error::UnbalancedRnum(rid))
                 }
             }
@@ -239,7 +241,8 @@ impl Edge {
 
 enum Target {
     Id(usize),
-    Rnum(usize, tree::Rnum)
+    // rid, sid, rnum
+    Rnum(usize, usize, tree::Rnum)
 }
 
 #[cfg(test)]
@@ -256,28 +259,29 @@ mod tests {
     fn unbalanced_rnum_single() {
         let root = read("*1", None).unwrap();
 
-        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(0)))
+        assert_eq!(from_tree(root, None), Err(Error::UnbalancedRnum(0)))
     }
 
     #[test]
     fn unbalanced_rnum_first() {
         let root = read("*1**1*2**3**", None).unwrap();
 
-        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(2)))
+        assert_eq!(from_tree(root, None), Err(Error::UnbalancedRnum(2)))
     }
 
     #[test]
     fn unbalanced_rnum_last() {
         let root = read("**1**1*2**", None).unwrap();
 
-        assert_eq!(from_tree(root), Err(Error::UnbalancedRnum(2)))
+        assert_eq!(from_tree(root, None), Err(Error::UnbalancedRnum(2)))
     }
 
     #[test]
     fn p1() {
         let root = read("*", None).unwrap();
+        let mut trace = Trace::new();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, Some(&mut trace)), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
@@ -286,10 +290,20 @@ mod tests {
     }
 
     #[test]
+    fn p1_trace() {
+        let root = read("*", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        assert_eq!(trace, Trace::new())
+    }
+
+    #[test]
     fn methane() {
         let root = read("C", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Aliphatic(Aliphatic::C),
                 bonds: vec![ ]
@@ -301,7 +315,7 @@ mod tests {
     fn p2() {
         let root = read("**", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -318,10 +332,24 @@ mod tests {
     }
 
     #[test]
+    fn p2_trace() {
+        let root = read("**", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        let mut expected = Trace::new();
+
+        expected.bond(0, 1);
+
+        assert_eq!(trace, expected)
+    }
+
+    #[test]
     fn p1_p1() {
         let root = read("*.*", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
@@ -334,10 +362,20 @@ mod tests {
     }
 
     #[test]
+    fn p1_p1_trace() {
+        let root = read("*.*", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        assert_eq!(trace, Trace::new())
+    }
+
+    #[test]
     fn p3() {
         let root = read("***", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -364,7 +402,7 @@ mod tests {
     fn p3_branched() {
         let root = read("*(*)*", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -388,10 +426,25 @@ mod tests {
     }
 
     #[test]
+    fn p3_branched_trace() {
+        let root = read("*(*)*", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        let mut expected = Trace::new();
+
+        expected.bond(0, 1);
+        expected.bond(0, 2);
+
+        assert_eq!(trace, expected)
+    }
+
+    #[test]
     fn c3() {
         let root = read("*1**1", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -417,10 +470,27 @@ mod tests {
     }
 
     #[test]
+    fn c3_trace() {
+        let root = read("*1**1", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        let mut expected = Trace::new();
+
+        expected.join(0, tree::Rnum::R1);
+        expected.bond(0, 1);
+        expected.bond(1, 2);
+        expected.join(2, tree::Rnum::R1);
+
+        assert_eq!(trace, expected)
+    }
+
+    #[test]
     fn c3_left_double() {
         let root = read("*=1**1", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -449,7 +519,7 @@ mod tests {
     fn c3_right_double() {
         let root = read("*1**=1", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -478,7 +548,7 @@ mod tests {
     fn c3_left_up_right_down() {
         let root = read("*/1**\\1", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -504,10 +574,30 @@ mod tests {
     }
 
     #[test]
+    fn diamond_trace() {
+        let root = read("*12**1*2", None).unwrap();
+        let mut trace = Trace::new();
+
+        from_tree(root, Some(&mut trace)).unwrap();
+
+        let mut expected = Trace::new();
+
+        expected.join(0, tree::Rnum::R1);
+        expected.join(0, tree::Rnum::R2);
+        expected.bond(0, 1);
+        expected.bond(1, 2);
+        expected.join(2, tree::Rnum::R1);
+        expected.bond(2, 3);
+        expected.join(3, tree::Rnum::R2);
+
+        assert_eq!(trace, expected)
+    }
+
+    #[test]
     fn p2_up() {
         let root = read("*/*", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
@@ -527,7 +617,7 @@ mod tests {
     fn atom_configuration_hydrogen_stereocentric() {
         let root = read("[C@H](F)(Cl)Br", None).unwrap();
 
-        assert_eq!(from_tree(root).unwrap()[0], Atom {
+        assert_eq!(from_tree(root, None).unwrap()[0], Atom {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
@@ -548,7 +638,7 @@ mod tests {
     fn atom_configuration_hydrogen_nonstereocentric() {
         let root = read("C[C@H](F)Cl", None).unwrap();
 
-        assert_eq!(from_tree(root).unwrap()[1], Atom {
+        assert_eq!(from_tree(root, None).unwrap()[1], Atom {
             kind: AtomKind::Bracket {
                 isotope: None,
                 symbol: BracketSymbol::Element(Element::C),
@@ -569,7 +659,7 @@ mod tests {
     fn bicyclo_220() {
         let root = read("*12***1**2", None).unwrap();
 
-        assert_eq!(from_tree(root), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
