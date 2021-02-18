@@ -142,6 +142,34 @@ fn main() -> Result<(), Error> {
 }
 ```
 
+It may be useful to map specific graph features to the cursor position in the SMILES string that generated them. This is possible using Purr's trace capability.
+
+```rust
+use purr::{ graph, read };
+
+fn main() -> Result<(), read::Error> {
+    let mut tree_trace = read::Trace::new();
+    //           atom ids: 0 12345
+    let tree = read::read("C1CCCCC=1", Some(&mut tree_trace))?;
+    //             cursor: 012345678
+    let mut graph_trace = graph::Trace::new();
+    let _ = graph::from_tree(tree, Some(&mut graph_trace))
+        .expect("graph from tree");
+    
+    let bond_5_0 = graph_trace.bond_id(5, 0).expect("bond 5, 0");
+    let bond_5_0_cursor = tree_trace.bonds[bond_5_0];
+    
+    assert_eq!(bond_5_0_cursor, 7); // bond(5, 0) @ cursor(7), type =
+
+    let bond_0_5 = graph_trace.bond_id(0, 5).expect("bond 0, 5");
+    let bond_0_5_cursor = tree_trace.bonds[bond_0_5];
+
+    assert_eq!(bond_0_5_cursor, 1); // bond(0, 5) @ cursor(1), type elided
+
+    Ok(())
+}
+```
+
 # Versions
 
 Purr is not yet stable. Patch versions never introduce breaking changes, but minor/major versions probably will.
