@@ -248,7 +248,7 @@ enum Target {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
-    use crate::read::read;
+    use crate::read::{ read, Trace as TreeTrace };
     use crate::parts::{
         AtomKind, BondKind, Aliphatic, BracketSymbol, Element, Configuration,
         VirtualHydrogen
@@ -279,9 +279,8 @@ mod tests {
     #[test]
     fn p1() {
         let root = read("*", None).unwrap();
-        let mut trace = Trace::new();
 
-        assert_eq!(from_tree(root, Some(&mut trace)), Ok(vec![
+        assert_eq!(from_tree(root, None), Ok(vec![
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![ ]
@@ -291,12 +290,13 @@ mod tests {
 
     #[test]
     fn p1_trace() {
-        let root = read("*", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("*", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        assert_eq!(trace, Trace::new())
+        assert_eq!(trace.atom_cursor(0), Some(0..1))
     }
 
     #[test]
@@ -333,16 +333,13 @@ mod tests {
 
     #[test]
     fn p2_trace() {
-        let root = read("**", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("**", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        let mut expected = Trace::new();
-
-        expected.bond(0, 1);
-
-        assert_eq!(trace, expected)
+        assert_eq!(trace.bond_cursor(0, 1), Some(1))
     }
 
     #[test]
@@ -363,12 +360,13 @@ mod tests {
 
     #[test]
     fn p1_p1_trace() {
-        let root = read("*.*", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("*.*", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        assert_eq!(trace, Trace::new())
+        assert_eq!(trace.bond_cursor(0, 1), None)
     }
 
     #[test]
@@ -427,17 +425,17 @@ mod tests {
 
     #[test]
     fn p3_branched_trace() {
-        let root = read("*(*)*", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("*(*)*", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        let mut expected = Trace::new();
-
-        expected.bond(0, 1);
-        expected.bond(0, 2);
-
-        assert_eq!(trace, expected)
+        assert_eq!(trace.atom_cursor(0), Some(0..1));
+        assert_eq!(trace.atom_cursor(1), Some(2..3));
+        assert_eq!(trace.atom_cursor(2), Some(4..5));
+        assert_eq!(trace.bond_cursor(0, 1), Some(2));
+        assert_eq!(trace.bond_cursor(0, 2), Some(4))
     }
 
     #[test]
@@ -471,19 +469,14 @@ mod tests {
 
     #[test]
     fn c3_trace() {
-        let root = read("*1**1", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("*1**1", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        let mut expected = Trace::new();
-
-        expected.join(0, tree::Rnum::R1);
-        expected.bond(0, 1);
-        expected.bond(1, 2);
-        expected.join(2, tree::Rnum::R1);
-
-        assert_eq!(trace, expected)
+        assert_eq!(trace.bond_cursor(0, 2), Some(1));
+        assert_eq!(trace.bond_cursor(2, 0), Some(4))
     }
 
     #[test]
@@ -575,22 +568,14 @@ mod tests {
 
     #[test]
     fn diamond_trace() {
-        let root = read("*12**1*2", None).unwrap();
-        let mut trace = Trace::new();
+        let mut trace = TreeTrace::new();
+        let root = read("*12**1*2", Some(&mut trace)).unwrap();
+        let mut trace = Trace::new(trace);
 
         from_tree(root, Some(&mut trace)).unwrap();
 
-        let mut expected = Trace::new();
-
-        expected.join(0, tree::Rnum::R1);
-        expected.join(0, tree::Rnum::R2);
-        expected.bond(0, 1);
-        expected.bond(1, 2);
-        expected.join(2, tree::Rnum::R1);
-        expected.bond(2, 3);
-        expected.join(3, tree::Rnum::R2);
-
-        assert_eq!(trace, expected)
+        assert_eq!(trace.bond_cursor(0, 3), Some(2));
+        assert_eq!(trace.bond_cursor(3, 0), Some(7))
     }
 
     #[test]
