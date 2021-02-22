@@ -148,27 +148,25 @@ It may be useful to map specific graph features to the cursor position in the SM
 use purr::{ graph, read };
 
 fn main() -> Result<(), read::Error> {
-    let mut tree_trace = read::Trace::new();
+    let mut trace = read::Trace::new();
     //           atom ids: 0 12    345
-    let tree = read::read("C1C[CH2]CCC=1", Some(&mut tree_trace))?;
+    let tree = read::read("C1C[CH2]CCC=1", Some(&mut trace))?;
     //             cursor: 0123456789012
-    let mut graph_trace = graph::Trace::new();
-    let _ = graph::from_tree(tree, Some(&mut graph_trace))
+    let mut trace = graph::Trace::new(trace);
+    let _ = graph::from_tree(tree, Some(&mut trace))
         .expect("graph from tree");
     
-    let bond_5_0 = graph_trace.bond_id(5, 0).expect("bond 5, 0");
-    let bond_5_0_cursor = tree_trace.bonds[bond_5_0];
+    let cursor = trace.bond_cursor(5, 0).expect("bond 5, 0");
     
-    assert_eq!(bond_5_0_cursor, 11); // bond(5, 0) @ cursor(1), type =
+    assert_eq!(cursor, 11); // bond(5, 0) @ cursor(11), type =
 
-    let bond_0_5 = graph_trace.bond_id(0, 5).expect("bond 0, 5");
-    let bond_0_5_cursor = tree_trace.bonds[bond_0_5];
+    let cursor = trace.bond_cursor(0, 5).expect("bond 0, 5");
 
-    assert_eq!(bond_0_5_cursor, 1); // bond(0, 5) @ cursor(1), type elided
+    assert_eq!(cursor, 1); // bond(0, 5) @ cursor(1), type elided
 
-    let atom_2 = tree_trace.atoms[2].clone(); // atom(2) @ cursor(3..8)
+    let cursor = trace.atom_cursor(2).expect("atom 0");
 
-    assert_eq!(atom_2, 3..8);
+    assert_eq!(cursor, 3..8); // atom(2) @ cursor(3..8)
 
     Ok(())
 }
