@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{ tree, parts };
-use super::{ Atom, Bond, Trace, Error };
+use super::{ Atom, Bond, Trace, Error, reconcile_bonds };
 
 /// Returns a graph-like (adjacency) representation from the corresponding
 /// tree. This is useful when analysis requires access to local atomic
@@ -55,7 +55,7 @@ pub fn from_tree(
     }
 
     while let Some((sid, link)) = stack.pop() {
-        add_link(sid, link, &mut stack, &mut builder)
+        add_link(sid, link, &mut stack, &mut builder)?
     }
 
     builder.build()
@@ -66,7 +66,7 @@ fn add_link(
     link: tree::Link,
     stack: &mut Vec<(usize, tree::Link)>,
     builder: &mut GraphBuilder
-) {
+) -> Result<(), Error> {
     let links = match link {
         tree::Link::Bond { kind: bond_kind, target } => match target {
             tree::Target::Atom(target) => {
@@ -75,9 +75,9 @@ fn add_link(
                 target.links
             },
             tree::Target::Join(rnum) => {
-                builder.join(sid, bond_kind, rnum);
+                builder.join(sid, bond_kind, rnum)?;
                 
-                return
+                return Ok(())
             }
         },
         tree::Link::Split(target) => {
@@ -92,6 +92,8 @@ fn add_link(
     for link in links.into_iter().rev() {
         stack.push((tid, link))
     }
+
+    Ok(())
 }
 
 struct GraphBuilder<'a> {
@@ -121,15 +123,13 @@ impl<'a> GraphBuilder<'a> {
 
     fn join(
         &mut self, sid: usize, bond_kind: parts::BondKind, rnum: tree::Rnum
-    ) {
+    ) -> Result<(), Error> {
         if let Some(trace) = self.trace.as_mut() {
             trace.join(sid, rnum.clone())
         }
 
         match self.opens.remove_entry(&rnum) {
             Some((rnum, tid)) => {
-                self.out[sid].edges.push(Edge::new(bond_kind, Target::Id(tid)));
-                
                 let edge = self.out[tid].edges.iter_mut().find(|edge| {
                     if let Target::Rnum(_, _, test) = &edge.target {
                         test == &rnum
@@ -137,8 +137,16 @@ impl<'a> GraphBuilder<'a> {
                         false
                     }
                 }).expect("edge for rnum");
-    
-                std::mem::swap(&mut edge.target, &mut Target::Id(sid))
+                
+                match reconcile_bonds(edge.kind.clone(), bond_kind) {
+                    Some((left, right)) => {
+                        edge.target = Target::Id(sid);
+                        edge.kind = left;
+
+                        self.out[sid].edges.push(Edge::new(right, Target::Id(tid)));
+                    },
+                    None => return Err(Error::IncompatibleJoin(sid, tid))
+                }
             },
             None => {
                 self.opens.insert(rnum.clone(), sid);
@@ -148,7 +156,9 @@ impl<'a> GraphBuilder<'a> {
             }
         }
     
-        self.rid += 1
+        self.rid += 1;
+
+        Ok(())
     }
 
     fn id(&self) -> usize {
@@ -480,6 +490,13 @@ mod tests {
     }
 
     #[test]
+    fn c3_left_up_right_up() {
+        let root = read("*/1**/1", None).unwrap();
+
+        assert_eq!(from_tree(root, None), Err(Error::IncompatibleJoin(2, 0)))
+    }
+
+    #[test]
     fn c3_left_double() {
         let root = read("*=1**1", None).unwrap();
 
@@ -502,7 +519,7 @@ mod tests {
                 kind: AtomKind::Star,
                 bonds: vec![
                     Bond::new(BondKind::Elided, 1),
-                    Bond::new(BondKind::Elided, 0)
+                    Bond::new(BondKind::Double, 0)
                 ]
             }
         ]))
@@ -516,7 +533,7 @@ mod tests {
             Atom {
                 kind: AtomKind::Star,
                 bonds: vec![
-                    Bond::new(BondKind::Elided, 2),
+                    Bond::new(BondKind::Double, 2),
                     Bond::new(BondKind::Elided, 1)
                 ]
             },
