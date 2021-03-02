@@ -4,16 +4,10 @@ use std::cmp::{ Ord, Ordering };
 use std::hash::{ Hash, Hasher };
 use std::convert::TryInto;
 
-use super::Rnum;
+use crate::feature::Rnum;
 
 #[derive(Eq,PartialEq,PartialOrd)]
 struct Index(u16);
-
-#[derive(Debug,PartialEq)]
-pub struct Hit {
-    pub rnum: Rnum,
-    pub closes: bool
-}
 
 impl Ord for Index {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -52,7 +46,7 @@ impl JoinPool {
         }
     }
 
-    pub fn hit(&mut self, sid: usize, tid: usize) -> Hit {
+    pub fn hit(&mut self, sid: usize, tid: usize) -> Rnum {
         let next = match self.replaced.pop() {
             Some(next) => next.0,
             None => {
@@ -69,12 +63,12 @@ impl JoinPool {
 
                 self.replaced.push(Index(result));
 
-                Hit { rnum: result.try_into().expect("rnum"), closes: true }
+                result.try_into().expect("rnum")
             },
             Entry::Vacant(vacant) => {
                 vacant.insert(next);
 
-                Hit { rnum: next.try_into().expect("rnum"), closes: false }
+                next.try_into().expect("rnum")
             }
         }
     }
@@ -103,80 +97,37 @@ mod hit {
     fn unknown() {
         let mut pool = JoinPool::new();
 
-        assert_eq!(pool.hit(1, 2), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        });
-        assert_eq!(pool.hit(1, 5), Hit {
-            rnum: Rnum::R2,
-            closes: false
-        });
-        assert_eq!(pool.hit(13, 42), Hit {
-            rnum: Rnum::R3,
-            closes: false
-        })
+        assert_eq!(pool.hit(1, 2), Rnum::R1);
+        assert_eq!(pool.hit(1, 5), Rnum::R2);
+        assert_eq!(pool.hit(13, 42), Rnum::R3)
     }
 
     #[test]
     fn known() {
         let mut pool = JoinPool::new();
 
-        assert_eq!(pool.hit(0, 1), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        });
-        assert_eq!(pool.hit(1, 0), Hit {
-            rnum: Rnum::R1,
-            closes: true
-        })
+        assert_eq!(pool.hit(0, 1), Rnum::R1);
+        assert_eq!(pool.hit(1, 0), Rnum::R1)
     }
 
     #[test]
     fn unknown_with_one_returned() {
         let mut pool = JoinPool::new();
 
-        assert_eq!(pool.hit(0, 1), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        });
-        assert_eq!(pool.hit(1, 0), Hit {
-            rnum: Rnum::R1,
-            closes: true
-        });
-        assert_eq!(pool.hit(13, 42), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        })
+        assert_eq!(pool.hit(0, 1), Rnum::R1);
+        assert_eq!(pool.hit(1, 0), Rnum::R1);
+        assert_eq!(pool.hit(13, 42), Rnum::R1)
     }
 
     #[test]
     fn unknown_with_two_returned() {
         let mut pool = JoinPool::new();
 
-        assert_eq!(pool.hit(0, 1), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        });
-        assert_eq!(pool.hit(1, 3), Hit {
-            rnum: Rnum::R2,
-            closes: false
-        });
-        assert_eq!(pool.hit(2, 4), Hit {
-            rnum: Rnum::R3,
-            closes: false
-        });
-        assert_eq!(pool.hit(3, 1), Hit {
-            rnum: Rnum::R2,
-            closes: true
-        });
-        assert_eq!(pool.hit(1, 0), Hit {
-            rnum: Rnum::R1,
-            closes: true
-        });
-
-        assert_eq!(pool.hit(3, 5), Hit {
-            rnum: Rnum::R1,
-            closes: false
-        })
+        assert_eq!(pool.hit(0, 1), Rnum::R1);
+        assert_eq!(pool.hit(1, 3), Rnum::R2);
+        assert_eq!(pool.hit(2, 4), Rnum::R3);
+        assert_eq!(pool.hit(3, 1), Rnum::R2);
+        assert_eq!(pool.hit(1, 0), Rnum::R1);
+        assert_eq!(pool.hit(3, 5), Rnum::R1)
     }
 }

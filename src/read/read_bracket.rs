@@ -1,17 +1,16 @@
 use std::convert::TryInto;
 
-use crate::parts::{ AtomKind, VirtualHydrogen, Number };
-use crate::tree::{ Atom };
+use crate::feature::{ AtomKind, VirtualHydrogen, Number };
 use super::{
     scanner::Scanner,
-    read_symbol::read_symbol,
-    read_charge::read_charge,
-    read_configuration::read_configuration,
-    missing_character::missing_character,
+    read_symbol,
+    read_charge,
+    read_configuration,
+    missing_character,
     Error
 };
 
-pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
+pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<AtomKind>, Error> {
     if let Some('[') = scanner.peek() {
         scanner.pop();
     } else {
@@ -29,15 +28,12 @@ pub fn read_bracket(scanner: &mut Scanner) -> Result<Option<Atom>, Error> {
         Some(']') => {
             scanner.pop();
             
-            Ok(Some(Atom {
-                kind: AtomKind::Bracket {
-                    isotope, symbol, configuration, hcount, charge, map
-                },
-                links: vec![ ]
+            Ok(Some(AtomKind::Bracket {
+                isotope, symbol, configuration, hcount, charge, map
             }))
         },
         None => Err(Error::EndOfLine),
-        _ => Err(Error::InvalidCharacter(scanner.cursor()))
+        _ => Err(Error::Character(scanner.cursor()))
     }
 }
 
@@ -97,7 +93,7 @@ fn read_map(scanner: &mut Scanner) -> Result<Option<Number>, Error> {
                 Some(next) => if next.is_ascii_digit() {
                     digits.push(*next);
                 } else {
-                    return Err(Error::InvalidCharacter(scanner.cursor() - 1))
+                    return Err(Error::Character(scanner.cursor() - 1))
                 },
                 None => return Err(missing_character(scanner))
             }
@@ -120,29 +116,28 @@ fn read_map(scanner: &mut Scanner) -> Result<Option<Number>, Error> {
 mod tests {
     use std::convert::TryInto;
     use pretty_assertions::assert_eq;
-    use crate::parts::{ BracketSymbol, Configuration, BracketAromatic, Charge };
-    use crate::tree::Atom;
+    use crate::feature::{ BracketSymbol, Configuration, BracketAromatic, Charge };
     use super::*;
 
     #[test]
     fn overflow_map() {
         let mut scanner = Scanner::new("[*:1000]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(6)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::Character(6)))
     }
 
     #[test]
     fn overflow_isotope() {
         let mut scanner = Scanner::new("[1000U]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(4)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::Character(4)))
     }
 
     #[test]
     fn bracket_invalid() {
         let mut scanner = Scanner::new("[Q]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(1)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::Character(1)))
     }
 
     #[test]
@@ -156,7 +151,7 @@ mod tests {
     fn colon_but_no_map() {
         let mut scanner = Scanner::new("[C:]");
 
-        assert_eq!(read_bracket(&mut scanner), Err(Error::InvalidCharacter(3)))
+        assert_eq!(read_bracket(&mut scanner), Err(Error::Character(3)))
     }
 
     #[test]
@@ -177,16 +172,13 @@ mod tests {
     fn star() {
         let mut scanner = Scanner::new("[*]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Star,
-                configuration: None,
-                hcount: None,
-                charge: None,
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: None,
+            hcount: None,
+            charge: None,
+            map: None
         })))
     }
 
@@ -194,16 +186,13 @@ mod tests {
     fn star_isotope() {
         let mut scanner = Scanner::new("[999*]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: Some(999.try_into().unwrap()),
-                symbol: BracketSymbol::Star,
-                configuration: None,
-                hcount: None,
-                charge: None,
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: Some(999.try_into().unwrap()),
+            symbol: BracketSymbol::Star,
+            configuration: None,
+            hcount: None,
+            charge: None,
+            map: None
         })))
     }
 
@@ -211,16 +200,13 @@ mod tests {
     fn star_configuration() {
         let mut scanner = Scanner::new("[*@]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Star,
-                configuration: Some(Configuration::TH1),
-                hcount: None,
-                charge: None,
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: Some(Configuration::TH1),
+            hcount: None,
+            charge: None,
+            map: None
         })))
     }
 
@@ -228,16 +214,13 @@ mod tests {
     fn star_hcount() {
         let mut scanner = Scanner::new("[*H2]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Star,
-                configuration: None,
-                hcount: Some(VirtualHydrogen::H2),
-                charge: None,
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: None,
+            hcount: Some(VirtualHydrogen::H2),
+            charge: None,
+            map: None
         })))
     }
 
@@ -245,16 +228,13 @@ mod tests {
     fn star_charge() {
         let mut scanner = Scanner::new("[*+]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Star,
-                configuration: None,
-                hcount: None,
-                charge: Some(Charge::One),
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: None,
+            hcount: None,
+            charge: Some(Charge::One),
+            map: None
         })))
     }
 
@@ -262,16 +242,13 @@ mod tests {
     fn star_map() {
         let mut scanner = Scanner::new("[*:999]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Star,
-                configuration: None,
-                hcount: None,
-                charge: None,
-                map: Some(999u16.try_into().unwrap())
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: None,
+            hcount: None,
+            charge: None,
+            map: Some(999u16.try_into().unwrap())
         })))
     }
 
@@ -279,16 +256,13 @@ mod tests {
     fn bracket_aromatic_charge() {
         let mut scanner = Scanner::new("[s+]");
 
-        assert_eq!(read_bracket(&mut scanner), Ok(Some(Atom {
-            kind: AtomKind::Bracket {
-                isotope: None,
-                symbol: BracketSymbol::Aromatic(BracketAromatic::S),
-                configuration: None,
-                hcount: None,
-                charge: Some(Charge::One),
-                map: None
-            },
-            links: vec![ ]
+        assert_eq!(read_bracket(&mut scanner), Ok(Some(AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Aromatic(BracketAromatic::S),
+            configuration: None,
+            hcount: None,
+            charge: Some(Charge::One),
+            map: None
         })))
     }
 }

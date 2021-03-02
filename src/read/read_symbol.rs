@@ -1,4 +1,4 @@
-use crate::parts::{ Element, BracketSymbol, BracketAromatic };
+use crate::feature::{ Element, BracketSymbol, BracketAromatic };
 use super::{ scanner::Scanner, Error, missing_character::missing_character };
 
 pub fn read_symbol(scanner: &mut Scanner) -> Result<BracketSymbol, Error> {
@@ -304,7 +304,7 @@ fn element(
 }
 
 #[cfg(test)]
-mod test {
+mod follower {
     use super::*;
 
     #[test]
@@ -318,7 +318,7 @@ mod test {
     fn j_eol() {
         let mut scanner = Scanner::new("J");
 
-        assert_eq!(read_symbol(&mut scanner), Err(Error::InvalidCharacter(0)))
+        assert_eq!(read_symbol(&mut scanner), Err(Error::Character(0)))
     }
 
     #[test]
@@ -333,7 +333,7 @@ mod test {
     fn lower_ax_eol() {
         let mut scanner = Scanner::new("ax");
 
-        assert_eq!(read_symbol(&mut scanner), Err(Error::InvalidCharacter(1)))
+        assert_eq!(read_symbol(&mut scanner), Err(Error::Character(1)))
     }
 
     #[test]
@@ -370,7 +370,7 @@ mod test {
         let mut scanner = Scanner::new(&"Ax");
 
         assert_eq!(
-            read_symbol(&mut scanner), Err(Error::InvalidCharacter(1))
+            read_symbol(&mut scanner), Err(Error::Character(1))
         );
         assert_eq!(scanner.cursor(), 1);
     }

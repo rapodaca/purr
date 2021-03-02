@@ -1,6 +1,8 @@
 use std::fmt;
 use std::convert::TryFrom;
 
+// A ring closure digit (rnum), as described in
+/// [OpenSMILES](http://opensmiles.org/opensmiles.html).
 #[derive(Debug,PartialEq,Eq,Hash,Clone)]
 pub enum Rnum {
     R0,

@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::parts::Charge;
+use crate::feature::Charge;
 use super::{ scanner::Scanner, Error };
 
 pub fn read_charge(scanner: &mut Scanner) -> Result<Option<Charge>, Error> {

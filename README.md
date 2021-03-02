@@ -1,12 +1,6 @@
 # Purr
 
-Primitives for reading and writing the SMILES language in Rust. For details, see:
-
-- [SMILES Formal Grammar](https://depth-first.com/articles/2020/04/20/smiles-formal-grammar/)
-- [SMILES Formal Grammar Revisited](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
-- [Let's Build a SMILES Parser in Rust](https://depth-first.com/articles/2020/05/25/lets-build-a-smiles-parser-in-rust/)
-- [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/14/an-abstract-syntatx-tree-for-smiles/)
-
+Primitives for reading and writing the SMILES language in Rust.
 ## Usage
 
 Add this to your `Cargo.toml`:
@@ -18,159 +12,112 @@ purr = "0.8"
 
 ## Examples
 
-Parse ethanol into an abstract syntax tree:
+Parse acetamide into an adjacency representation:
 
 ```rust
-use purr::read::{ read, Error };
-use purr::tree::{ Atom, Link, Target };
-use purr::parts::{
-  AtomKind, Aliphatic, BondKind, Element, BracketSymbol, VirtualHydrogen
-};
-
-fn main() -> Result<(), Error> {
-    let root = read("OC[CH3]", None)?;
-
-    assert_eq!(root, Atom {
-        kind: AtomKind::Aliphatic(Aliphatic::O),
-        links: vec![
-            Link::Bond {
-                kind: BondKind::Elided,
-                target: Target::Atom(Atom {
-                    kind: AtomKind::Aliphatic(Aliphatic::C),
-                    links: vec![
-                        Link::Bond {
-                            kind: BondKind::Elided,
-                            target: Target::Atom(Atom {
-                                kind: AtomKind::Bracket {
-                                    isotope: None,
-                                    symbol: BracketSymbol::Element(Element::C),
-                                    configuration: None,
-                                    hcount: Some(VirtualHydrogen::H3),
-                                    charge: None,
-                                    map: None
-                                },
-                                links: vec![ ]
-                            })
-                        }
-                    ]
-                })
-            }
-        ]
-    });
-
-    Ok(())
-}
-```
-
-It's often helpful to represent a tree as a string for visual inspection.
-
-```rust
-use purr::read::{ read, Error };
-use purr::tree::Writer;
-
-fn main() -> Result<(), Error> {
-    let root = read("c1ccccc1", None)?;
-
-    assert_eq!(Writer::write(&root), "c1ccccc1");
-
-    Ok(())
-}
-```
-
-The `trace` value maps each `Atom` index to a cursor position in the original string. This is useful when conveying semantic errors such as hypervalence. 
-
-```rust
-use purr::read::{ read, Trace, Error };
-
-fn main() -> Result<(), Error> {
-    let mut trace = Trace::new();
-    let _ = read("C=C(C)(C)C", Some(&mut trace))?;
-
-    assert_eq!(trace, Trace {
-        atoms: vec![ 0..1, 2..3, 4..5, 7..8, 9..10 ],
-        bonds: vec![ 1, 4, 7, 9 ],
-        rnums: vec![ ]
-    });
-
-    // obtain the cursor position of the atom at index 1 (second atom):
-    assert_eq!(trace.atoms[1], 2..3);
-
-    Ok(())
-}
-```
-
-Syntax errors are mapped to the character index.
-
-```rust
+use purr::graph::{ Builder, Atom, Bond };
+use purr::feature::{ AtomKind, BondKind, Aliphatic };
 use purr::read::{ read, Error };
 
-fn main() {
-    assert_eq!(read("OCCXC", None), Err(Error::InvalidCharacter(3)));
-}
-```
-
-Sometimes it's more convenient to work with an adjacency (or graph-like) representation. This can be accomplished through the `graph_from_tree` method.
-
-```rust
-use purr::read::{ read };
-use purr::graph::{ Atom, Bond, from_tree, Error };
-use purr::parts::{ AtomKind, Aliphatic, BondKind };
-
 fn main() -> Result<(), Error> {
-    let root = read("C=*", None).expect("read");
-    let graph = from_tree(root, None)?;
- 
-    assert_eq!(graph, vec![
+    let mut builder = Builder::new();
+
+    read("CC(=O)N", &mut builder, None)?;
+
+    assert_eq!(builder.build(), Ok(vec![
         Atom {
             kind: AtomKind::Aliphatic(Aliphatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 1)
+            ]
+        },
+        Atom {
+            kind: AtomKind::Aliphatic(Aliphatic::C),
+            bonds: vec![
+                Bond::new(BondKind::Elided, 0),
+                Bond::new(BondKind::Double, 2),
+                Bond::new(BondKind::Elided, 3)
+            ]
+        },
+        Atom {
+            kind: AtomKind::Aliphatic(Aliphatic::O),
             bonds: vec![
                 Bond::new(BondKind::Double, 1)
             ]
         },
         Atom {
-            kind: AtomKind::Star,
+            kind: AtomKind::Aliphatic(Aliphatic::N),
             bonds: vec![
-                Bond::new(BondKind::Double, 0)
+                Bond::new(BondKind::Elided, 1)
             ]
         }
-     ]);
+    ]));
 
-    assert_eq!(graph[0].is_aromatic(), false);
-    assert_eq!(graph[0].subvalence(), 2);
- 
     Ok(())
 }
 ```
 
-It may be useful to map specific graph features to the cursor position in the SMILES string that generated them. This is possible using Purr's trace capability.
+The order of atoms and their substituents reflects their implied order within the corresponding SMILES string. This is important when atomic configuration (e.g., `@`, `@@`) is present at an atom.
+
+An optional `Trace` type maps adjacency features to a cursor position in the original string. This is useful for conveying semantic errors such as hypervalence. 
 
 ```rust
-use purr::{ graph, read };
+use purr::graph::Builder;
+use purr::read::{ read, Error, Trace };
 
-fn main() -> Result<(), read::Error> {
-    let mut trace = read::Trace::new();
-    //           atom ids: 0 12    345
-    let tree = read::read("C1C[CH2]CCC=1", Some(&mut trace))?;
-    //             cursor: 0123456789012
-    let mut trace = graph::Trace::new(trace);
-    let _ = graph::from_tree(tree, Some(&mut trace))
-        .expect("graph from tree");
-    
-    let cursor = trace.bond_cursor(5, 0).expect("bond 5, 0");
-    
-    assert_eq!(cursor, 11); // bond(5, 0) @ cursor(11), type =
+fn main() -> Result<(), Error> {
+    let mut builder = Builder::new();
+    let mut trace = Trace::new();
 
-    let cursor = trace.bond_cursor(0, 5).expect("bond 0, 5");
+    //    012345678901234
+    read("C(C)C(C)(C)(C)C", &mut builder, Some(&mut trace))?;
 
-    assert_eq!(cursor, 1); // bond(0, 5) @ cursor(1), type elided
-
-    let cursor = trace.atom_cursor(2).expect("atom 0");
-
-    assert_eq!(cursor, 3..8); // atom(2) @ cursor(3..8)
+    // Texas carbon @ atom(2) with cursor range 4..5
+    assert_eq!(trace.atom(2), Some(4..5));
 
     Ok(())
 }
 ```
+
+Syntax errors are mapped to the cursor at which they occur.
+
+```rust
+use purr::graph::Builder;
+use purr::read::{ read, Error };
+
+fn main() {
+    let mut builder = Builder::new();
+
+    assert_eq!(read("OCCXC", &mut builder, None), Err(Error::Character(3)));
+}
+```
+
+An adjacency can be written using `write`.
+
+```rust
+use purr::graph::{ Builder, Atom, Bond };
+use purr::feature::{ AtomKind, BondKind, Aliphatic };
+use purr::read::{ read, Error };
+use purr::write::Writer;
+use purr::walk::walk;
+
+fn main() -> Result<(), Error> {
+    let mut builder = Builder::new();
+
+    read("c1c([37Cl])cccc1", &mut builder, None)?;
+
+    let atoms = builder.build().expect("atoms");
+    let mut writer = Writer::new();
+
+    walk(atoms, &mut writer).expect("walk");
+
+    assert_eq!(writer.write(), "c(ccccc1[37Cl])1");
+
+    Ok(())
+}
+```
+
+The output string doesn't match the input string, although both represent the same molecule (Cl-37 chlorobenzene). `write` traces `atoms` in depth-first order, but the adjacency representation (`atoms`) lacks information about how the original SMILES tree was cut.
 
 # Versions
 

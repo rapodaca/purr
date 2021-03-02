@@ -1,6 +1,6 @@
-/// Syntax error resulting from scanning a SMILES string.
+/// An error that occurs when reading a SMILES string.
 #[derive(Debug,PartialEq)]
 pub enum Error {
     EndOfLine,
-    InvalidCharacter(usize)
+    Character(usize)
 }

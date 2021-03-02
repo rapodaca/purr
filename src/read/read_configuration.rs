@@ -1,4 +1,4 @@
-use crate::parts::Configuration;
+use crate::feature::Configuration;
 use super::{
     scanner::Scanner,
     Error,

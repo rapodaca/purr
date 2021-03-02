@@ -1,4 +1,4 @@
-use crate::parts::BondKind;
+use crate::feature::BondKind;
 
 /// A bond from a graph-like Atom to an Atom ID.
 #[derive(Debug,PartialEq)]

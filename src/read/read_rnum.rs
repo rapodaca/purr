@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::tree::{ Rnum };
+use crate::feature::Rnum;
 use super::{ scanner::Scanner, Error, missing_character::missing_character };
 
 pub fn read_rnum(

@@ -1,4 +1,4 @@
-use crate::parts::AtomKind;
+use crate::feature::AtomKind;
 use super::Bond;
 
 /// Atom used in graph-like (adjacency) SMILES representation.
@@ -74,7 +74,7 @@ impl Atom {
 
 #[cfg(test)]
 mod subvalence {
-    use crate::parts::{
+    use crate::feature::{
         BondKind, BracketSymbol, Element, BracketAromatic, Aliphatic, Aromatic,
         Charge, VirtualHydrogen
     };
@@ -245,7 +245,7 @@ mod subvalence {
 #[cfg(test)]
 mod suppressed_hydrogens {
     use pretty_assertions::assert_eq;
-    use crate::parts::{
+    use crate::feature::{
         Aromatic, Aliphatic, BondKind, BracketSymbol, Element, VirtualHydrogen
     };
     use super::*;

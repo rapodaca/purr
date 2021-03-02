@@ -1,6 +1,7 @@
 use std::convert::{ TryFrom, TryInto, From };
 use std::fmt;
 
+/// An integer from zero to 1,000.
 #[derive(Debug,PartialEq)]
 pub struct Number {
     value: u16

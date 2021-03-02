@@ -7,13 +7,15 @@
 //! - [Abstract Syntax Trees for SMILES](https://depth-first.com/articles/2020/12/21/smiles-formal-grammar-revisited/)
 
 /// Common components used in `graph` and `tree` representations.
-pub mod parts;
-/// Tree representation of SMILES.
-pub mod tree;
-/// Graph-like (adcacency) representation of SMILES.
-pub mod graph;
-/// Reading SMILES strings.
+pub mod feature;
+/// Reading SMILES representations from strings.
 pub mod read;
+/// Writing SMILES string representations.
+pub mod write;
+/// Traversal of an adjacency representation.
+pub mod walk;
+/// SMILES adjacency list representation.
+pub mod graph;
 
 // https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790
 #[cfg(doctest)]

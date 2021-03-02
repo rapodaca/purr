@@ -51,6 +51,34 @@ impl AtomKind {
             }
         }
     }
+
+    /// Inverts configuration given if it and at least one implicit
+    /// hydrogen are present.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics given a Configuration other than TH1 or TH2.
+    pub fn invert_configuration(&mut self) {
+        if let AtomKind::Bracket { hcount, configuration, .. } = self {
+            let new_config = match configuration {
+                Some(config) => match hcount {
+                    Some(hcount) => if hcount.is_zero() {
+                        return
+                    } else {
+                        match config {
+                            Configuration::TH1 => Configuration::TH2,
+                            Configuration::TH2 => Configuration::TH1,
+                            _ => unimplemented!("TODO: handle inversion for non-TH")
+                        }
+                    },
+                    None => return
+                },
+                None => return
+            };
+    
+            configuration.replace(new_config);
+        }
+    }
 }
 
 fn elemental_targets(element: &Element, charge: &Option<Charge>) -> &'static [u8] {
@@ -144,6 +172,84 @@ impl fmt::Display for AtomKind {
 
                 write!(f, "]")
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod invert {
+    use pretty_assertions::assert_eq;
+    use super::*;
+
+    #[test]
+    fn aliphatic_organic() {
+        let mut kind = AtomKind::Aliphatic(Aliphatic::C);
+
+        kind.invert_configuration();
+
+        match kind {
+            AtomKind::Aliphatic(_) => (),
+            _ => panic!("expected aliphatic")
+        }
+    }
+
+    #[test]
+    fn th1_h_none() {
+        let mut kind = AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: Some(Configuration::TH1),
+            hcount: None,
+            charge: None,
+            map: None
+        };
+
+        kind.invert_configuration();
+
+        match kind {
+            AtomKind::Bracket { configuration, .. } =>
+                assert_eq!(configuration, Some(Configuration::TH1)),
+            _ => panic!("expected bracket")
+        }
+    }
+
+    #[test]
+    fn th1_h1() {
+        let mut kind = AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: Some(Configuration::TH1),
+            hcount: Some(VirtualHydrogen::H1),
+            charge: None,
+            map: None
+        };
+
+        kind.invert_configuration();
+
+        match kind {
+            AtomKind::Bracket { configuration, .. } =>
+                assert_eq!(configuration, Some(Configuration::TH2)),
+            _ => panic!("expected bracket")
+        }
+    }
+
+    #[test]
+    fn th2_h1() {
+        let mut kind = AtomKind::Bracket {
+            isotope: None,
+            symbol: BracketSymbol::Star,
+            configuration: Some(Configuration::TH2),
+            hcount: Some(VirtualHydrogen::H1),
+            charge: None,
+            map: None
+        };
+
+        kind.invert_configuration();
+
+        match kind {
+            AtomKind::Bracket { configuration, .. } =>
+                assert_eq!(configuration, Some(Configuration::TH1)),
+            _ => panic!("expected bracket")
         }
     }
 }

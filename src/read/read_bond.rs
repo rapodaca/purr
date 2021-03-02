@@ -1,4 +1,4 @@
-use crate::parts::BondKind;
+use crate::feature::BondKind;
 use super::scanner::Scanner;
 
 pub fn read_bond(scanner: &mut Scanner) -> BondKind {
