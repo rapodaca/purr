@@ -1,5 +1,5 @@
 use std::fmt;
-use std::convert::Into;
+use std::convert::TryFrom;
 
 /// Represents the virtual hydrogen count on a bracket atom.
 /// See: [Hydrogen Suppression in SMILES](https://depth-first.com/articles/2020/06/08/hydrogen-suppression-in-smiles/).
@@ -21,6 +21,26 @@ impl VirtualHydrogen {
     /// Returns true if the count is zero, or false otherwise.
     pub fn is_zero(&self) -> bool {
         self == &VirtualHydrogen::H0
+    }
+}
+
+impl TryFrom<u8> for VirtualHydrogen {
+    type Error = ();
+
+    fn try_from(count: u8) -> Result<Self, Self::Error> {
+        match count {
+            0 => Ok(Self::H0),
+            1 => Ok(Self::H1),
+            2 => Ok(Self::H2),
+            3 => Ok(Self::H3),
+            4 => Ok(Self::H4),
+            5 => Ok(Self::H5),
+            6 => Ok(Self::H6),
+            7 => Ok(Self::H7),
+            8 => Ok(Self::H8),
+            9 => Ok(Self::H9),
+            _ => Err(())
+        }
     }
 }
 
