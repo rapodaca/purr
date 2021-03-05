@@ -1,4 +1,7 @@
+use std::convert::TryFrom;
 use std::fmt;
+
+use super::Element;
 
 /// Atomic symbols that can be aliphatic.
 #[derive(Debug,PartialEq)]
@@ -21,6 +24,28 @@ impl Aliphatic {
             Self::I |
             Self::At |
             Self::Ts => &[ 1 ]
+        }
+    }
+}
+
+impl TryFrom<&Element> for Aliphatic {
+    type Error = ();
+
+    fn try_from(value: &Element) -> Result<Self, Self::Error> {
+        match value {
+            Element::B => Ok(Self::B),
+            Element::C => Ok(Self::C),
+            Element::N => Ok(Self::N),
+            Element::O => Ok(Self::O),
+            Element::S => Ok(Self::S),
+            Element::P => Ok(Self::P),
+            Element::F => Ok(Self::F),
+            Element::Cl => Ok(Self::Cl),
+            Element::Br => Ok(Self::Br),
+            Element::I => Ok(Self::I),
+            Element::At => Ok(Self::At),
+            Element::Ts => Ok(Self::Ts),
+            _ => Err(())
         }
     }
 }

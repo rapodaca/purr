@@ -1,6 +1,7 @@
 use std::fmt;
+use std::convert::TryFrom;
 
-use super::Aliphatic;
+use super::{ Aliphatic, BracketAromatic };
 
 /// Atomic symbols that can be aromatic.
 #[derive(Debug,PartialEq)]
@@ -18,6 +19,22 @@ impl Aromatic {
             Self::O => &[ 2 ],
             Self::P => &[ 3, 5 ],
             Self::S => &[ 2, 4, 6 ]
+        }
+    }
+}
+
+impl TryFrom<&BracketAromatic> for Aromatic {
+    type Error = ();
+
+    fn try_from(value: &BracketAromatic) -> Result<Self, Self::Error> {
+        match value {
+            BracketAromatic::B => Ok(Self::B),
+            BracketAromatic::C => Ok(Self::C),
+            BracketAromatic::N => Ok(Self::N),
+            BracketAromatic::O => Ok(Self::O),
+            BracketAromatic::P => Ok(Self::P),
+            BracketAromatic::S => Ok(Self::S),
+            _ => Err(())
         }
     }
 }
