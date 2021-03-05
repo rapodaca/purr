@@ -173,26 +173,22 @@ fn elemental_targets(element: &Element, charge: &Option<Charge>) -> &'static [u8
             Some(Charge::MinusThree) => &OXYGEN_TARGET,
             Some(Charge::MinusTwo) => &NITROGEN_TARGET,
             Some(Charge::MinusOne) => &CARBON_TARGET,
-            Some(Charge::Zero) |
             None => &BORON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::C => match charge {
             Some(Charge::MinusTwo) => &OXYGEN_TARGET,
             Some(Charge::MinusOne) => &NITROGEN_TARGET,
-            Some(Charge::Zero) |
             Some(Charge::One) => &BORON_TARGET,
             None => &CARBON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::N => match charge {
-            Some(Charge::Zero) |
             None => &NITROGEN_TARGET,
             Some(Charge::One) => &CARBON_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::O => match charge {
-            Some(Charge::Zero) |
             None => &OXYGEN_TARGET,
             Some(Charge::One) => &NITROGEN_TARGET,
             _ => &EMPTY_TARGET
@@ -200,13 +196,11 @@ fn elemental_targets(element: &Element, charge: &Option<Charge>) -> &'static [u8
         Element::P |
         Element::As => match charge {
             Some(Charge::MinusOne) => &SULFUR_TARGET,
-            Some(Charge::Zero) |
             None => &PHOSPHOROUS_TARGET,
             _ => &EMPTY_TARGET
         },
         Element::S |
         Element::Se => match charge {
-            Some(Charge::Zero) |
             None => &SULFUR_TARGET,
             Some(Charge::One) => &PHOSPHOROUS_TARGET,
             _ => &EMPTY_TARGET
