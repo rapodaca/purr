@@ -1,6 +1,9 @@
 # Purr
 
+**NOTE: This repository has been superseded by the [Balsa Reference Implementation](https://github.com/metamolecular/balsa/).**
+
 Primitives for reading and writing the SMILES language in Rust.
+
 ## Usage
 
 Add this to your `Cargo.toml`:
